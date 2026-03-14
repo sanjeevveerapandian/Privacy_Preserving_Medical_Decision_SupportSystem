@@ -1,0 +1,217 @@
+{% extends 'patient_base.html' %}
+
+{% block title %}My Profile - Patient Portal{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Manage your personal information and settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Overview -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>Profile Overview
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <!-- Profile Picture -->
+                <div class="mb-4">
+                    <div class="position-relative d-inline-block">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" 
+                             class="rounded-circle border border-4 border-white shadow" 
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle border border-4 border-white shadow d-flex align-items-center justify-content-center" 
+                             style="width: 150px; height: 150px; background: linear-gradient(135deg, #3498db, #2980b9); color: white; font-size: 48px;">
+                            {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+                        </div>
+                        {% endif %}
+                        <button class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0" 
+                                style="width: 40px; height: 40px;"
+                                onclick="document.getElementById('profile_picture').click()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Basic Info -->
+                <h4 class="mb-2">{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-user me-2"></i>Patient ID: {{ user.id|stringformat:"06d" }}
+                </p>
+                
+                <!-- Health Status -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2">Health Status</h6>
+                    <span class="badge {% if user.risk_level == 'low' %}badge-success{% elif user.risk_level == 'medium' %}badge-warning{% elif user.risk_level == 'high' %}badge-danger{% else %}badge-secondary{% endif %} p-3 fs-6">
+                        {{ user.risk_level|default:"Not Assessed"|title }}
+                    </span>
+                    {% if user.last_analysis %}
+                    <p class="text-muted small mt-2">
+                        Last checked: {{ user.last_analysis|date:"M d, Y" }}
+                    </p>
+                    {% endif %}
+                </div>
+                
+ 
+            </div>
+        </div>
+        
+
+    </div>
+    
+    <!-- Edit Profile Form -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <input type="file" id="profile_picture" name="profile_picture" class="d-none" 
+                           onchange="previewImage(this)">
+                    
+                    <div class="row">
+                        <!-- Personal Information -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">First Name</label>
+                            <input type="text" class="form-control" name="first_name" 
+                                   value="{{ user.first_name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" 
+                                   value="{{ user.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email Address</label>
+                            <input type="email" class="form-control" name="email" 
+                                   value="{{ user.email }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Phone Number</label>
+                            <input type="tel" class="form-control" name="phone" 
+                                   value="{{ user.phone|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Address -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Address</label>
+                        <input type="text" class="form-control" name="address" 
+                               value="{{ user.address|default:'' }}" placeholder="Street address">
+                    </div>
+                    
+                    
+                    
+                    <!-- Date of Birth & Gender -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Date of Birth</label>
+                            <input type="date" class="form-control" name="date_of_birth" 
+                                   value="{{ user.date_of_birth|date:'Y-m-d' }}">
+                        </div>
+           
+                    </div>
+                    
+
+                    
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'patient_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<!-- Medical Info Help Modal -->
+<div class="modal fade" id="medicalInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Medical Information Guide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please include any information that might be important for your healthcare providers:</p>
+                <ul>
+                    <li><strong>Allergies:</strong> Medication, food, or environmental allergies</li>
+                    <li><strong>Current Medications:</strong> Prescription and over-the-counter medications</li>
+                    <li><strong>Past Surgeries:</strong> Dates and types of surgeries</li>
+                    <li><strong>Chronic Conditions:</strong> Diabetes, hypertension, asthma, etc.</li>
+                    <li><strong>Family History:</strong> Hereditary conditions in immediate family</li>
+                    <li><strong>Lifestyle:</strong> Smoking, alcohol, exercise habits</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    This information is encrypted and only accessible to your healthcare providers.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create a new image element
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'rounded-circle border border-4 border-white shadow';
+                img.style.width = '150px';
+                img.style.height = '150px';
+                img.style.objectFit = 'cover';
+                
+                // Replace the current profile picture
+                const profileContainer = document.querySelector('.position-relative.d-inline-block');
+                const currentImg = profileContainer.querySelector('img, div');
+                profileContainer.insertBefore(img, currentImg);
+                currentImg.remove();
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    // Save emergency contacts
+    $('#saveEmergencyContacts').on('click', function() {
+        const formData = $('#emergencyContactsForm').serialize();
+        
+        $.ajax({
+            url: '{% url "patient_profile" %}',
+            method: 'POST',
+            data: formData + '&save_emergency_contacts=true',
+            success: function(response) {
+                $('#emergencyContactsModal').modal('hide');
+                location.reload();
+            },
+            error: function() {
+                alert('Failed to save emergency contacts. Please try again.');
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

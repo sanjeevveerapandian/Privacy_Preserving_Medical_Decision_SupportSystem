@@ -1,0 +1,269 @@
+<!-- templates/doctor/patients.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Patients - Doctor Portal{% endblock %}
+{% block page_title %}Patient Management{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-user-injured me-1"></i>Manage your patient records
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon patients">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value">{{ total_patients }}</div>
+                <div class="stat-label">Total Patients</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon high-risk">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value">{{ high_risk_patients }}</div>
+                <div class="stat-label">High Risk</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon analysis">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="stat-value">{{ risk_distribution.low|default:0 }}</div>
+                <div class="stat-label">Low Risk</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon chats">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-value">{{ risk_distribution.medium|default:0 }}</div>
+                <div class="stat-label">Medium Risk</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">Patient Search</div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="Name, username, or email..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Risk Level</label>
+                    <select name="risk_level" class="form-select">
+                        <option value="">All Risk Levels</option>
+                        <option value="low" {% if risk_filter == 'low' %}selected{% endif %}>Low</option>
+                        <option value="medium" {% if risk_filter == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="high" {% if risk_filter == 'high' %}selected{% endif %}>High</option>
+                        <option value="critical" {% if risk_filter == 'critical' %}selected{% endif %}>Critical</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-doctor w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Patients Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Patient List</span>
+            <a href="#" class="btn btn-doctor btn-sm" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+                <i class="fas fa-user-plus me-1"></i>Add Patient
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Contact</th>
+                            <th>Last Visit</th>
+                            <th>Risk Level</th>
+                            <th>Appointments</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3" style="width: 40px; height: 40px;">
+                                        {{ patient.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ patient.get_full_name|default:patient.username }}</div>
+                                        <div class="small text-muted">ID: {{ patient.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ patient.email }}</div>
+                                {% if patient.phone %}
+                                <div class="small text-muted">{{ patient.phone }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if patient.last_analysis %}
+                                {{ patient.last_analysis|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ patient.risk_level|default:'low' }}">
+                                    {{ patient.get_risk_level_display|default:"Not assessed" }}
+                                </span>
+                            </td>
+                            <td>
+                                {% with patient.appointments.count as appointment_count %}
+                                {% if appointment_count > 0 %}
+                                <span class="badge bg-info">{{ appointment_count }}</span>
+                                {% else %}
+                                <span class="text-muted">None</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'doctor_patient_detail' patient.id %}" class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'doctor_patient_analysis' patient.id %}" class="btn btn-outline-doctor" title="Analyze">
+                                        <i class="fas fa-stethoscope"></i>
+                                    </a>
+                                    <a href="{% url 'doctor_appointments' %}?search={{ patient.username }}" class="btn btn-outline-success" title="Appointments">
+                                        <i class="fas fa-calendar"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-user-injured fa-2x text-muted mb-3"></i>
+                                <h5>No Patients Found</h5>
+                                <p class="text-muted">No patients match your search criteria.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Patient Modal -->
+<div class="modal fade" id="addPatientModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'doctor_patients' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" name="full_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" name="phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" name="date_of_birth">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" name="gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Medical History (Optional)</label>
+                            <textarea class="form-control" name="medical_history" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-doctor">Add Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Risk distribution chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.createElement('canvas');
+        const riskChartContainer = document.querySelector('.risk-chart-container');
+        if (riskChartContainer) {
+            riskChartContainer.appendChild(ctx);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'],
+                    datasets: [{
+                        data: [
+                            {{ risk_distribution.low|default:0 }},
+                            {{ risk_distribution.medium|default:0 }},
+                            {{ risk_distribution.high|default:0 }},
+                            {{ risk_distribution.critical|default:0 }}
+                        ],
+                        backgroundColor: [
+                            '#d4edda',
+                            '#fff3cd',
+                            '#f8d7da',
+                            '#721c24'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

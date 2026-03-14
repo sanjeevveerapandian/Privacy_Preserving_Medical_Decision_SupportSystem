@@ -1,0 +1,317 @@
+<!-- templates/researcher/dashboard.html -->
+{% extends 'researcher/researcher_base.html' %}
+
+{% block title %}Researcher Dashboard - Medical Research System{% endblock %}
+
+{% block page_title %}Researcher Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }} - {{ timezone.now|date:"F j, Y" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Research Overview -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-flask me-2"></i>Research Overview
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="text-primary mb-3">Medical Research Assistant</h4>
+                            <p class="mb-4">
+                                Welcome to your research portal. This platform provides advanced tools for medical research 
+                                analysis, data interpretation, and research methodology support.
+                            </p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h6><i class="fas fa-check-circle text-success me-2"></i>Core Features</h6>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2"><i class="fas fa-caret-right text-primary me-2"></i>AI Research Assistant</li>
+                                            <li class="mb-2"><i class="fas fa-caret-right text-primary me-2"></i>Data Analysis Tools</li>
+                                            <li class="mb-2"><i class="fas fa-caret-right text-primary me-2"></i>Statistical Analysis</li>
+                                            <li class="mb-2"><i class="fas fa-caret-right text-primary me-2"></i>Research Methodology Support</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h6><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
+                                        <div class="d-grid gap-2">
+                                            <a href="{% url 'researcher_chat' %}" class="btn btn-primary">
+                                                <i class="fas fa-comment-medical me-2"></i>Start Research Chat
+                                            </a>
+                                            <a href="{% url 'researcher_profile' %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-user-edit me-2"></i>Update Profile
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-4">
+                                <i class="fas fa-microscope fa-4x text-primary mb-3"></i>
+                                <h5>Research Status</h5>
+                                <p class="text-muted">AI Assistant Ready</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Research Tools & Resources -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-tools me-2"></i>Research Tools
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-comment-medical fa-2x text-primary"></i>
+                                    </div>
+                                    <h6>AI Research Assistant</h6>
+                                    <p class="small text-muted">Get help with research methodology, statistics, and data analysis</p>
+                                    <a href="{% url 'researcher_chat' %}" class="btn btn-sm btn-primary">Open Chat</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-chart-bar fa-2x text-success"></i>
+                                    </div>
+                                    <h6>Data Analysis</h6>
+                                    <p class="small text-muted">Analyze research data and interpret results</p>
+                                    <button class="btn btn-sm btn-outline-primary" disabled>Coming Soon</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-book fa-2x text-warning"></i>
+                                    </div>
+                                    <h6>Literature Review</h6>
+                                    <p class="small text-muted">Access research papers and publications</p>
+                                    <button class="btn btn-sm btn-outline-primary" disabled>Coming Soon</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-file-alt fa-2x text-info"></i>
+                                    </div>
+                                    <h6>Research Reports</h6>
+                                    <p class="small text-muted">Generate and export research findings</p>
+                                    <button class="btn btn-sm btn-outline-primary" disabled>Coming Soon</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-history me-2"></i>Recent Research Activity</span>
+                </div>
+                <div class="card-body">
+                    {% if chat_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Messages</th>
+                                    <th>Last Updated</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in chat_sessions %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-comment-medical text-primary me-2"></i>
+                                            <span>{{ session.title|truncatechars:30 }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ session.messages.count }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ session.updated_at|timesince }} ago</small>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'researcher_chat' %}?session={{ session.id }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Continue
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5>No Research Sessions Yet</h5>
+                        <p class="text-muted mb-4">Start your first research session with our AI assistant</p>
+                        <a href="{% url 'researcher_chat' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Start New Session
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'researcher_chat' %}" class="btn btn-primary">
+                            <i class="fas fa-flask me-2"></i>Go to Research Assistant
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Research Guidelines -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-clipboard-check me-2"></i>Research Guidelines
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Important Notes</h6>
+                        <p class="mb-0">
+                            This research assistant provides guidance based on current medical knowledge. 
+                            Always verify information with peer-reviewed sources and consult with senior researchers 
+                            or medical professionals for critical decisions.
+                        </p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-shield-alt text-primary me-2"></i>Ethical Research</h6>
+                                    <p class="small text-muted mb-0">
+                                        Follow ethical guidelines and maintain patient confidentiality in all research activities.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-file-contract text-success me-2"></i>Data Integrity</h6>
+                                    <p class="small text-muted mb-0">
+                                        Ensure data accuracy and maintain proper documentation of all research procedures.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-users text-warning me-2"></i>Collaboration</h6>
+                                    <p class="small text-muted mb-0">
+                                        Collaborate with peers and mentors for better research outcomes and validation.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        border: none;
+    }
+    
+    .btn-outline-primary {
+        color: #2c3e50;
+        border-color: #2c3e50;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #2c3e50;
+        border-color: #2c3e50;
+    }
+    
+    .badge {
+        padding: 5px 10px;
+        border-radius: 10px;
+    }
+    
+    .table th {
+        border-top: none;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    .alert-info {
+        background-color: #e8f4fd;
+        border-color: #b6e0fe;
+        color: #0c5460;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-hide alerts after 8 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 8000);
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

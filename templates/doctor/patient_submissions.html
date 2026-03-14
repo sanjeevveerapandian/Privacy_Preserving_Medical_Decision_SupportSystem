@@ -1,0 +1,260 @@
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Patient Submissions - Doctor Portal{% endblock %}
+{% block page_title %}Patient Symptom Submissions{% endblock %}
+{% block page_subtitle %}<i class="fas fa-clipboard-list me-1"></i>Review symptoms and notes submitted by patients
+(v3){% endblock %}
+
+{% block extra_css %}
+<style>
+    .submission-card {
+        transition: all 0.3s ease;
+        border-left: 5px solid transparent;
+    }
+
+    .submission-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .submission-card.risk-high {
+        border-left-color: #e74c3c;
+    }
+
+    .submission-card.risk-medium {
+        border-left-color: #f39c12;
+    }
+
+    .submission-card.risk-low {
+        border-left-color: #27ae60;
+    }
+
+    .submission-card.risk-critical {
+        border-left-color: #721c24;
+    }
+
+    .fuzzy-mini-chart {
+        display: flex;
+        height: 60px;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+    }
+
+    .fuzzy-mini-bar {
+        flex: 1;
+        border-radius: 4px 4px 0 0;
+        min-height: 2px;
+    }
+
+    .fuzzy-mini-bar.low {
+        background: #2ecc71;
+    }
+
+    .fuzzy-mini-bar.medium {
+        background: #f1c40f;
+    }
+
+    .fuzzy-mini-bar.high {
+        background: #e74c3c;
+    }
+
+    .symptom-tag {
+        display: inline-block;
+        padding: 2px 10px;
+        background: #edf2f7;
+        color: #4a5568;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .symptom-tag.severity-high {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .symptom-tag.severity-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Submissions</span>
+                    <span class="badge bg-primary">{{submissions|length}} Total</span>
+                </div>
+                <div class="card-body">
+                    {% if submissions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 200px;">Patient</th>
+                                    <th>Reported Symptoms</th>
+                                    <th>Additional Notes</th>
+                                    <th style="width: 180px;">AI Risk Analysis</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in submissions %}
+                                <tr class="submission-card risk-{{item.record.risk_level}}">
+                                    <td>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="user-avatar me-2"
+                                                style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                                {{item.patient.username|first|upper}}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold small">
+                                                    {{item.patient.get_full_name|default:item.patient.username}}</div>
+                                                <div class="small text-muted">Age: {{item.age}} | {{item.gender|title}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted ps-1">
+                                            <div><i class="fas fa-briefcase fa-fw me-1"></i>{{item.occupation}}</div>
+                                            <div><i class="fas fa-map-marker-alt fa-fw me-1"></i>{{item.region}}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="mb-2">
+                                            {% for sym in item.symptoms %}
+                                            <span class="symptom-tag severity-{{sym.severity}}">
+                                                {{sym.name}} ({{sym.severity|title}}{% if sym.duration %},
+                                                {{sym.duration}}{% endif %})
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="p-2 rounded bg-light border small">
+                                            <div class="mb-1"><strong>Duration:</strong> {{item.duration}}</div>
+                                            <div class="mb-1"><strong>Frequency:</strong> {{item.frequency}}</div>
+                                            <div class="mb-1">
+                                                <strong>Past History:</strong> {{item.past_history|truncatechars:80}}
+                                                {% if item.record.past_history_file %}
+                                                <div class="mt-1">
+                                                    <a href="{{item.record.past_history_file.url}}" target="_blank"
+                                                        class="btn btn-xs btn-outline-info py-0 px-2"
+                                                        style="font-size: 0.7rem;">
+                                                        <i class="fas fa-file-download me-1"></i>View Attachment
+                                                    </a>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="fas fa-clock me-1"></i>{{item.record.created_at|timesince}} ago
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if item.notes %}
+                                        <div class="small text-dark p-2 rounded bg-light border"
+                                            style="max-height: 100px; overflow-y: auto;">{{item.notes}}</div>
+                                        {% else %}
+                                        <span class="text-muted small italic">No additional notes provided.</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="badge badge-{{item.record.risk_level}} mb-2">
+                                                {{item.record.get_risk_level_display}}
+                                            </span>
+                                            <div class="fuzzy-mini-chart"
+                                                title="Fuzzy Risk Membership: Low/Medium/High">
+                                                <div class="fuzzy-mini-bar low"
+                                                    style="height: {{item.record.fuzzy_membership.low|default:0}}%;">
+                                                </div>
+                                                <div class="fuzzy-mini-bar medium"
+                                                    style="height: {{item.record.fuzzy_membership.medium|default:0}}%;">
+                                                </div>
+                                                <div class="fuzzy-mini-bar high"
+                                                    style="height: {{item.record.fuzzy_membership.high|default:0}}%;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-2">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'doctor_patient_detail' item.patient.id %}"
+                                                    class="btn btn-outline-primary" title="Full History">
+                                                    <i class="fas fa-history"></i>
+                                                </a>
+                                                <a href="{% url 'doctor_patient_analysis' item.patient.id %}"
+                                                    class="btn btn-doctor" title="Deep Analysis">
+                                                    <i class="fas fa-microscope"></i>
+                                                </a>
+                                            </div>
+                                            <button class="btn btn-sm btn-success appointment-btn"
+                                                onclick="acceptAppointment('{{item.patient.id}}', '{{item.record.id}}', this)">
+                                                <i class="fas fa-check-circle me-1"></i>Accept
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                        <h5>No Submissions Yet</h5>
+                        <p class="text-muted">When patients use the symptom checker, their data will appear here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function acceptAppointment(patientId, recordId, btn) {
+        if (!confirm('Are you sure you want to accept this consultation and notify the patient?')) return;
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        try {
+            const response = await fetch('{% url "doctor_accept_appointment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    patient_id: patientId,
+                    record_id: recordId
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+                btn.innerHTML = '<i class="fas fa-check-double me-1"></i>Accepted';
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+</script>
+{% endblock %}

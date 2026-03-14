@@ -1,0 +1,646 @@
+{% extends 'patient_base.html' %}
+
+{% block title %}Health Assistant Chat - Patient Portal{% endblock %}
+
+{% block page_title %}Health Assistant{% endblock %}
+{% block page_subtitle %}Chat with AI assistant for health information{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Chat specific styles */
+    .chat-sidebar {
+        background: white;
+        border-radius: 15px;
+        height: 600px;
+        overflow-y: auto;
+    }
+    
+    .chat-main {
+        background: white;
+        border-radius: 15px;
+        height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-header {
+        padding: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #fafafa;
+    }
+    
+    .chat-input-area {
+        padding: 20px;
+        border-top: 2px solid #f0f0f0;
+        background: white;
+    }
+    
+    .chat-session-item {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+    }
+    
+    .chat-session-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+    }
+    
+    .chat-session-item.active {
+        background: rgba(52, 152, 219, 0.1);
+        border-left-color: #3498db;
+    }
+    
+    .model-selector {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        padding: 15px;
+    }
+    
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #666;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-8px); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Chat History Sidebar -->
+    <div class="col-md-4 mb-4">
+        <div class="chat-sidebar">
+            <div class="model-selector mb-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-brain me-2"></i>AI Model</h6>
+                <div class="input-group mb-3">
+                    <select class="form-select" id="modelSelect">
+                        <option value="">Select Model</option>
+                        {% for model in available_models %}
+                        <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                            {{ model }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-outline-primary" type="button" id="testConnection">
+                        <i class="fas fa-plug"></i>
+                    </button>
+                </div>
+                <div id="modelStatus" class="small">
+                    {% if selected_model != 'No models available' %}
+                    <span class="text-success"><i class="fas fa-circle-check"></i> Connected: {{ selected_model }}</span>
+                    {% else %}
+                    <span class="text-danger"><i class="fas fa-circle-exclamation"></i> No models available</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 mb-4">
+                <button class="btn btn-primary" id="newChatBtn">
+                    <i class="fas fa-plus me-2"></i>New Chat
+                </button>
+                <button class="btn btn-outline-secondary" id="clearChatBtn">
+                    <i class="fas fa-trash me-2"></i>Clear Chat
+                </button>
+            </div>
+            
+            <h6 class="fw-bold mb-3 px-3"><i class="fas fa-history me-2"></i>Chat History</h6>
+            <div class="chat-history-list px-2">
+                {% for session in chat_history %}
+                <div class="chat-session-item {% if session.id == chat_session.id %}active{% endif %}" 
+                     data-session-id="{{ session.id }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">{{ session.title|truncatechars:25 }}</h6>
+                            <p class="text-muted small mb-0">
+                                {{ session.messages.count }} messages
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger delete-session-btn" 
+                                data-session-id="{{ session.id }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">{{ session.updated_at|timesince }} ago</small>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">No chat history</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Chat Area -->
+    <div class="col-md-8 mb-4">
+        <div class="chat-main">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div>
+                    <h5 class="mb-1">{{ chat_session.title }}</h5>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-user me-1"></i>{{ patient_info.name }}
+                        {% if patient_info.risk_level != 'Not assessed' %}
+                        <span class="ms-3"><i class="fas fa-chart-line me-1"></i>Risk: {{ patient_info.risk_level }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" id="exportChatBtn"><i class="fas fa-download me-2"></i>Export Chat</a></li>
+                        <li><a class="dropdown-item" href="#" id="shareChatBtn"><i class="fas fa-share me-2"></i>Share with Doctor</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" id="deleteChatBtn"><i class="fas fa-trash me-2"></i>Delete Chat</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="message {% if message.message_type == 'user' %}user-message{% else %}ai-message{% endif %}">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                {% if message.message_type == 'user' %}
+                                <i class="fas fa-user-circle fa-lg text-primary"></i>
+                                {% else %}
+                                <i class="fas fa-robot fa-lg text-success"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="message-content">
+                                    {{ message.content|linebreaks }}
+                                </div>
+                                <small class="text-muted mt-1 d-block">
+                                    {{ message.created_at|time:"h:i A" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">Welcome to Health Assistant</h5>
+                    <p class="text-muted mb-4">Ask me about general health information, wellness tips, or medical terminology.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary mb-2 w-100 quick-question" data-question="What are common flu symptoms?">
+                                <i class="fas fa-temperature-high me-2"></i>Flu Symptoms
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary mb-2 w-100 quick-question" data-question="How can I improve my sleep?">
+                                <i class="fas fa-bed me-2"></i>Sleep Tips
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary mb-2 w-100 quick-question" data-question="What foods are good for heart health?">
+                                <i class="fas fa-heart me-2"></i>Heart Health
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary mb-2 w-100 quick-question" data-question="When should I see a doctor for a headache?">
+                                <i class="fas fa-head-side-virus me-2"></i>Headache Advice
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input-area">
+                <form id="chatForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="sessionId" value="{{ chat_session.id }}">
+                    <div class="input-group">
+                        <textarea class="form-control" id="messageInput" rows="2" 
+                                  placeholder="Type your health question here..." 
+                                  style="resize: none;"></textarea>
+                        <button class="btn btn-primary" type="submit" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeContext" checked>
+                            <label class="form-check-label small" for="includeContext">
+                                Include my health context
+                            </label>
+                        </div>
+                        <small class="text-muted">Press Enter to send, Shift+Enter for new line</small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const sessionId = '{{ chat_session.id }}';
+        const messagesContainer = $('#chatMessages');
+        
+        // Scroll to bottom of messages
+        messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+        
+        // Handle form submission
+        $('#chatForm').on('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // Handle Enter key (send on Enter, new line on Shift+Enter)
+        $('#messageInput').on('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Quick question buttons
+        $('.quick-question').on('click', function() {
+            const question = $(this).data('question');
+            $('#messageInput').val(question);
+            sendMessage();
+        });
+        
+        // Model selection
+        $('#modelSelect').on('change', function() {
+            const modelName = $(this).val();
+            if (modelName) {
+                changeModel(modelName);
+            }
+        });
+        
+        // Test connection
+        $('#testConnection').on('click', function() {
+            testConnection();
+        });
+        
+        // New chat
+        $('#newChatBtn').on('click', function() {
+            createNewChat();
+        });
+        
+        // Clear chat
+        $('#clearChatBtn').on('click', function() {
+            if (confirm('Clear all messages in this chat?')) {
+                clearChat();
+            }
+        });
+        
+        // Delete chat
+        $('#deleteChatBtn').on('click', function() {
+            if (confirm('Delete this chat permanently?')) {
+                deleteChat();
+            }
+        });
+        
+        // Delete session from sidebar
+        $('.delete-session-btn').on('click', function(e) {
+            e.stopPropagation();
+            const sessionId = $(this).data('session-id');
+            if (confirm('Delete this chat session?')) {
+                deleteSession(sessionId);
+            }
+        });
+        
+        // Switch to session
+        $('.chat-session-item').on('click', function() {
+            const sessionId = $(this).data('session-id');
+            window.location.href = `/patient/chat/?session=${sessionId}`;
+        });
+        
+        // Export chat
+        $('#exportChatBtn').on('click', function() {
+            exportChat();
+        });
+        
+        // Share chat
+        $('#shareChatBtn').on('click', function() {
+            shareChat();
+        });
+        
+        function sendMessage() {
+            const message = $('#messageInput').val().trim();
+            const model = $('#modelSelect').val();
+            
+            if (!message) return;
+            
+            if (!model) {
+                alert('Please select an AI model first.');
+                return;
+            }
+            
+            // Disable input and show loading
+            $('#messageInput').prop('disabled', true);
+            $('#sendBtn').prop('disabled', true).html('<span class="loading-spinner"></span>');
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            
+            // Clear input
+            $('#messageInput').val('');
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to server
+            $.ajax({
+                url: '{% url "patient_chat_send" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    message: message,
+                    session_id: sessionId,
+                    model: model
+                }),
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Remove typing indicator
+                        removeTypingIndicator();
+                        
+                        // Add AI response
+                        addMessageToChat(response.ai_response, 'ai');
+                        
+                        // Update model status if changed
+                        if (response.model && response.model !== model) {
+                            $('#modelSelect').val(response.model);
+                            $('#modelStatus').html(`<span class="text-success"><i class="fas fa-circle-check"></i> Connected: ${response.model}</span>`);
+                        }
+                    } else {
+                        removeTypingIndicator();
+                        showError(response.error || 'Failed to send message');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    removeTypingIndicator();
+                    showError('Network error. Please try again.');
+                },
+                complete: function() {
+                    $('#messageInput').prop('disabled', false).focus();
+                    $('#sendBtn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i>');
+                }
+            });
+        }
+        
+        function addMessageToChat(message, type) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const icon = type === 'user' ? 'fa-user-circle text-primary' : 'fa-robot text-success';
+            const messageClass = type === 'user' ? 'user-message' : 'ai-message';
+            
+            const messageHtml = `
+                <div class="message ${messageClass}">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="message-content">
+                                ${message.replace(/\n/g, '<br>')}
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                ${timestamp}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.append(messageHtml);
+            messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+        }
+        
+        function showTypingIndicator() {
+            const typingHtml = `
+                <div class="message ai-message" id="typingIndicator">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-robot fa-lg text-success"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.append(typingHtml);
+            messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+        }
+        
+        function removeTypingIndicator() {
+            $('#typingIndicator').remove();
+        }
+        
+        function changeModel(modelName) {
+            $.ajax({
+                url: '{% url "patient_change_model" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ model: modelName }),
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#modelStatus').html(`<span class="text-success"><i class="fas fa-circle-check"></i> ${response.message}</span>`);
+                        // Update model select with available models
+                        if (response.available_models) {
+                            updateModelSelect(response.available_models, response.current_model);
+                        }
+                    } else {
+                        showError(response.error);
+                        // Reset to previous model
+                        $('#modelSelect').val('{{ selected_model }}');
+                    }
+                },
+                error: function() {
+                    showError('Failed to change model');
+                    $('#modelSelect').val('{{ selected_model }}');
+                }
+            });
+        }
+        
+        function testConnection() {
+            $('#testConnection').prop('disabled', true).html('<span class="loading-spinner"></span>');
+            
+            $.ajax({
+                url: '{% url "test_patient_ollama_connection" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    $('#testConnection').prop('disabled', false).html('<i class="fas fa-plug"></i>');
+                    
+                    if (response.success) {
+                        $('#modelStatus').html(`<span class="text-success"><i class="fas fa-circle-check"></i> ${response.message}</span>`);
+                        
+                        if (response.models && response.current_model) {
+                            updateModelSelect(response.models, response.current_model);
+                        }
+                        
+                        if (response.status === 'connected') {
+                            showAlert('success', 'Connection successful!');
+                        }
+                    } else {
+                        $('#modelStatus').html(`<span class="text-danger"><i class="fas fa-circle-exclamation"></i> ${response.error}</span>`);
+                        showAlert('danger', response.error);
+                    }
+                },
+                error: function() {
+                    $('#testConnection').prop('disabled', false).html('<i class="fas fa-plug"></i>');
+                    showError('Connection test failed');
+                }
+            });
+        }
+        
+        function createNewChat() {
+            $.ajax({
+                url: '{% url "patient_new_chat_session" %}',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = response.redirect_url;
+                    } else {
+                        showError(response.error);
+                    }
+                }
+            });
+        }
+        
+        function clearChat() {
+            // This would typically be a server-side call to clear messages
+            // For now, just reload the page
+            window.location.reload();
+        }
+        
+        function deleteChat() {
+            deleteSession(sessionId);
+        }
+        
+        function deleteSession(sessionIdToDelete) {
+            $.ajax({
+                url: `/patient/chat/session/${sessionIdToDelete}/delete/`,
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (sessionIdToDelete === sessionId) {
+                            // If deleting current session, redirect to new chat
+                            createNewChat();
+                        } else {
+                            // Remove from sidebar
+                            $(`.chat-session-item[data-session-id="${sessionIdToDelete}"]`).remove();
+                            showAlert('success', response.message);
+                        }
+                    } else {
+                        showError(response.error);
+                    }
+                }
+            });
+        }
+        
+        function exportChat() {
+            // Implementation for exporting chat as PDF or text
+            showAlert('info', 'Export feature coming soon!');
+        }
+        
+        function shareChat() {
+            // Implementation for sharing chat with doctor
+            showAlert('info', 'Share feature coming soon!');
+        }
+        
+        function updateModelSelect(models, currentModel) {
+            const select = $('#modelSelect');
+            select.empty();
+            
+            if (models.length === 0) {
+                select.append('<option value="">No models available</option>');
+            } else {
+                select.append('<option value="">Select Model</option>');
+                models.forEach(function(model) {
+                    const option = $('<option>').val(model).text(model);
+                    if (model === currentModel) {
+                        option.prop('selected', true);
+                    }
+                    select.append(option);
+                });
+            }
+        }
+        
+        function showAlert(type, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Insert at top of content
+            $('.main-content > .header').after(alertHtml);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 5000);
+        }
+        
+        function showError(message) {
+            showAlert('danger', message);
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

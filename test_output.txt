@@ -1,0 +1,81 @@
+[ML] Initializing ML Service...
+[ML] Attempting to load model...
+[ML] Loading model from: /Users/pyt/Downloads/1CP25-754 2/ml_models/disease_predictor.joblib
+[ML] Model loaded successfully!
+[ML] Attempting to load features...
+[ML] Loading features from: /Users/pyt/Downloads/1CP25-754 2/data/Train.csv
+[ML] Loaded 132 features
+[ML] Initialization complete. Model loaded: True, Features loaded: True
+🧪 Testing Stable ML Prediction Pipeline...
+
+--- Test: Standard Case ---
+[ML] Pipeline started with symptoms: ['itching', 'skin_rash']
+✅ confidence: 18.2
+✅ base_risk: 0.18
+✅ symptom_factor: 0.13
+✅ severity_factor: 0.4
+✅ age_factor: 0.25
+✅ risk_score: 0.223
+Result: Fungal infection | Category: LOW
+
+--- Test: Empty Symptoms ---
+[ML] Pipeline started with symptoms: []
+✅ confidence: 0
+✅ base_risk: 0
+✅ symptom_factor: 0
+✅ severity_factor: 0
+✅ age_factor: 0
+✅ risk_score: 0
+Result: Healthy / Unknown | Category: LOW
+
+--- Test: Extreme Age (High) ---
+[ML] Pipeline started with symptoms: ['fever']
+✅ confidence: 6.7
+✅ base_risk: 0.07
+✅ symptom_factor: 0
+✅ severity_factor: 0.8
+✅ age_factor: 1.0
+✅ risk_score: 0.294
+Result: Urinary tract infection | Category: LOW
+
+--- Test: Extreme Age (Low/Invalid) ---
+[ML] Pipeline started with symptoms: ['fever']
+✅ confidence: 6.7
+✅ base_risk: 0.07
+✅ symptom_factor: 0
+✅ severity_factor: 0.2
+✅ age_factor: 0
+✅ risk_score: 0.074
+Result: Urinary tract infection | Category: LOW
+
+--- Test: Invalid Severity (High) ---
+[ML] Pipeline started with symptoms: ['cough']
+✅ confidence: 6.7
+✅ base_risk: 0.07
+✅ symptom_factor: 0.07
+✅ severity_factor: 1.0
+✅ age_factor: 0.45
+✅ risk_score: 0.292
+Result: GERD | Category: LOW
+
+--- Test: Invalid Severity (Low) ---
+[ML] Pipeline started with symptoms: ['cough']
+✅ confidence: 6.7
+✅ base_risk: 0.07
+✅ symptom_factor: 0.07
+✅ severity_factor: 0
+✅ age_factor: 0.45
+✅ risk_score: 0.092
+Result: GERD | Category: LOW
+
+--- Test: Many Symptoms ---
+[ML] Pipeline started with symptoms: ['fever', 'cough', 'fatigue', 'headache', 'nausea']
+✅ confidence: 7.7
+✅ base_risk: 0.08
+✅ symptom_factor: 0.27
+✅ severity_factor: 0.6
+✅ age_factor: 0.35
+✅ risk_score: 0.247
+Result: (vertigo) Paroymsal  Positional Vertigo | Category: LOW
+
+✨ ALL STABILITY TESTS PASSED! No NaN values detected.

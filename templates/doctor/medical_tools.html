@@ -1,0 +1,1109 @@
+<!-- templates/doctor/medical_tools.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Medical Tools - Doctor Portal{% endblock %}
+{% block page_title %}Medical Tools & Calculators{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-tools me-1"></i>Essential medical calculators and diagnostic tools
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Tool Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">Tool Categories</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-doctor w-100 h-100 py-3" onclick="showTool('bmicalc')">
+                                <i class="fas fa-weight fa-2x mb-2"></i>
+                                <div>BMI Calculator</div>
+                            </button>
+                        </div>
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-primary w-100 h-100 py-3" onclick="showTool('dosecalc')">
+                                <i class="fas fa-pills fa-2x mb-2"></i>
+                                <div>Dose Calculator</div>
+                            </button>
+                        </div>
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-success w-100 h-100 py-3" onclick="showTool('creatinine')">
+                                <i class="fas fa-kidneys fa-2x mb-2"></i>
+                                <div>GFR Calculator</div>
+                            </button>
+                        </div>
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-warning w-100 h-100 py-3" onclick="showTool('padua')">
+                                <i class="fas fa-procedures fa-2x mb-2"></i>
+                                <div>Risk Scores</div>
+                            </button>
+                        </div>
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-info w-100 h-100 py-3" onclick="showTool('converters')">
+                                <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                                <div>Converters</div>
+                            </button>
+                        </div>
+                        <div class="col-md-2 col-4 mb-3">
+                            <button class="btn btn-outline-danger w-100 h-100 py-3" onclick="showTool('emergency')">
+                                <i class="fas fa-ambulance fa-2x mb-2"></i>
+                                <div>Emergency Tools</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selected Tool -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header" id="toolTitle">Select a Tool</div>
+                <div class="card-body">
+                    <!-- BMI Calculator -->
+                    <div id="bmicalc" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">Body Mass Index (BMI) Calculator</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Weight (kg)</label>
+                                    <input type="number" class="form-control" id="weight" step="0.1" placeholder="e.g., 70">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Height (cm)</label>
+                                    <input type="number" class="form-control" id="height" placeholder="e.g., 175">
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-doctor" onclick="calculateBMI()">Calculate BMI</button>
+                        
+                        <div id="bmiResult" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 id="bmiValue" class="text-center mb-3"></h4>
+                                    <div class="progress mb-3" style="height: 20px;">
+                                        <div id="bmiProgress" class="progress-bar" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <div class="small">Underweight</div>
+                                            <div class="fw-bold">&lt;18.5</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Normal</div>
+                                            <div class="fw-bold">18.5-24.9</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Overweight</div>
+                                            <div class="fw-bold">25-29.9</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Obese</div>
+                                            <div class="fw-bold">≥30</div>
+                                        </div>
+                                    </div>
+                                    <div id="bmiInterpretation" class="mt-3 p-3 rounded bg-light"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dose Calculator -->
+                    <div id="dosecalc" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">Medication Dose Calculator</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Patient Weight (kg)</label>
+                                    <input type="number" class="form-control" id="patientWeight" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Recommended Dose (mg/kg)</label>
+                                    <input type="number" class="form-control" id="dosePerKg" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Medication Concentration</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="concentration" value="1">
+                                        <select class="form-select" id="concentrationUnit">
+                                            <option value="mg/ml">mg/ml</option>
+                                            <option value="g/ml">g/ml</option>
+                                            <option value="mg/5ml">mg/5ml</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Frequency</label>
+                                    <select class="form-select" id="frequency">
+                                        <option value="1">Once daily</option>
+                                        <option value="2">Twice daily</option>
+                                        <option value="3">Three times daily</option>
+                                        <option value="4">Four times daily</option>
+                                        <option value="6">Every 4 hours</option>
+                                        <option value="8">Every 8 hours</option>
+                                        <option value="12">Every 12 hours</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-doctor" onclick="calculateDose()">Calculate Dose</button>
+                        
+                        <div id="doseResult" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Dosage Calculation Results</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Total Daily Dose</label>
+                                                <div class="form-control" id="totalDose"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Per Dose</label>
+                                                <div class="form-control" id="perDose"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Volume per Dose</label>
+                                        <div class="form-control" id="volumePerDose"></div>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Always double-check calculations and consider patient-specific factors.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GFR Calculator -->
+                    <div id="creatinine" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">eGFR Calculator (CKD-EPI)</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Age (years)</label>
+                                    <input type="number" class="form-control" id="age">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Gender</label>
+                                    <select class="form-select" id="gender">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Creatinine (mg/dL)</label>
+                                    <input type="number" class="form-control" id="creatinineLevel" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Race</label>
+                            <select class="form-select" id="race">
+                                <option value="non-black">Non-Black</option>
+                                <option value="black">Black</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-doctor" onclick="calculateGFR()">Calculate eGFR</button>
+                        
+                        <div id="gfrResult" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="text-center mb-3">
+                                        eGFR: <span id="gfrValue"></span> mL/min/1.73m²
+                                    </h4>
+                                    <div class="progress mb-3" style="height: 20px;">
+                                        <div id="gfrProgress" class="progress-bar" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="row text-center mb-3">
+                                        <div class="col-md-3">
+                                            <div class="small">Stage 1</div>
+                                            <div class="fw-bold">≥90</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Stage 2</div>
+                                            <div class="fw-bold">60-89</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Stage 3</div>
+                                            <div class="fw-bold">30-59</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small">Stage 4-5</div>
+                                            <div class="fw-bold">&lt;30</div>
+                                        </div>
+                                    </div>
+                                    <div id="gfrInterpretation" class="p-3 rounded bg-light"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Scores -->
+                    <div id="padua" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">Padua Prediction Score for VTE</h5>
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            The Padua Prediction Score helps assess venous thromboembolism (VTE) risk in hospitalized patients.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="activeCancer">
+                                    <label class="form-check-label" for="activeCancer">
+                                        Active cancer (3 points)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="previousVTE">
+                                    <label class="form-check-label" for="previousVTE">
+                                        Previous VTE (3 points)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="reducedMobility">
+                                    <label class="form-check-label" for="reducedMobility">
+                                        Reduced mobility (3 points)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="thrombophilia">
+                                    <label class="form-check-label" for="thrombophilia">
+                                        Known thrombophilia (3 points)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="recentTrauma">
+                                    <label class="form-check-label" for="recentTrauma">
+                                        Recent trauma/surgery (2 points)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="elderly">
+                                    <label class="form-check-label" for="elderly">
+                                        Age ≥70 years (1 point)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="heartFailure">
+                                    <label class="form-check-label" for="heartFailure">
+                                        Heart/respiratory failure (1 point)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="miStroke">
+                                    <label class="form-check-label" for="miStroke">
+                                        Acute MI/Stroke (1 point)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="infection">
+                                    <label class="form-check-label" for="infection">
+                                        Acute infection/Rheumatologic (1 point)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="obesity">
+                                    <label class="form-check-label" for="obesity">
+                                        Obesity (BMI ≥30) (1 point)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-doctor" onclick="calculatePaduaScore()">Calculate Score</button>
+                        
+                        <div id="paduaResult" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="text-center mb-3">
+                                        Padua Score: <span id="paduaValue"></span> points
+                                    </h4>
+                                    <div id="paduaInterpretation" class="p-3 rounded bg-light"></div>
+                                    <div class="mt-3">
+                                        <h6>Recommended Prophylaxis:</h6>
+                                        <div id="prophylaxisRecommendation"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Converters -->
+                    <div id="converters" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">Medical Unit Converters</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">Weight Conversion</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">From</label>
+                                                    <input type="number" class="form-control" id="weightFrom" value="70">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unit</label>
+                                                    <select class="form-select" id="weightFromUnit">
+                                                        <option value="kg">Kilograms (kg)</option>
+                                                        <option value="lb">Pounds (lb)</option>
+                                                        <option value="g">Grams (g)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-outline-doctor w-100" onclick="convertWeight()">
+                                            Convert <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                        <div class="mt-3">
+                                            <div class="form-control" id="weightResult">Result will appear here</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">Temperature Conversion</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">From</label>
+                                                    <input type="number" class="form-control" id="tempFrom" value="37">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unit</label>
+                                                    <select class="form-select" id="tempFromUnit">
+                                                        <option value="c">Celsius (°C)</option>
+                                                        <option value="f">Fahrenheit (°F)</option>
+                                                        <option value="k">Kelvin (K)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-outline-doctor w-100" onclick="convertTemperature()">
+                                            Convert <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                        <div class="mt-3">
+                                            <div class="form-control" id="tempResult">Result will appear here</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Lab Unit Conversion</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Value</label>
+                                            <input type="number" class="form-control" id="labValue" value="100">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">From Unit</label>
+                                                    <select class="form-select" id="labFromUnit">
+                                                        <option value="mgdl">mg/dL</option>
+                                                        <option value="mmoll">mmol/L</option>
+                                                        <option value="iu">IU/L</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">To Unit</label>
+                                                    <select class="form-select" id="labToUnit">
+                                                        <option value="mmoll">mmol/L</option>
+                                                        <option value="mgdl">mg/dL</option>
+                                                        <option value="iu">IU/L</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-outline-doctor w-100" onclick="convertLab()">
+                                            Convert <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                        <div class="mt-3">
+                                            <div class="form-control" id="labResult">Result will appear here</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Common Conversions</div>
+                                    <div class="card-body">
+                                        <div class="list-group list-group-flush">
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 inch</span>
+                                                <span class="fw-bold">2.54 cm</span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 pound</span>
+                                                <span class="fw-bold">0.4536 kg</span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 teaspoon</span>
+                                                <span class="fw-bold">5 mL</span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 tablespoon</span>
+                                                <span class="fw-bold">15 mL</span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 ounce</span>
+                                                <span class="fw-bold">28.35 g</span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between">
+                                                <span>1 cup</span>
+                                                <span class="fw-bold">240 mL</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Emergency Tools -->
+                    <div id="emergency" class="tool-container" style="display: none;">
+                        <h5 class="mb-4">Emergency Medical Tools</h5>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            For emergency use only. Always verify calculations and use clinical judgment.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-danger text-white">
+                                        <i class="fas fa-bolt me-2"></i>IV Fluid Rate Calculator
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Total Volume (mL)</label>
+                                            <input type="number" class="form-control" id="totalVolume" value="1000">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Time (hours)</label>
+                                            <input type="number" class="form-control" id="infusionTime" value="8">
+                                        </div>
+                                        <button class="btn btn-danger w-100" onclick="calculateIVRate()">
+                                            Calculate Rate
+                                        </button>
+                                        <div class="mt-3">
+                                            <div class="alert alert-success" id="ivRateResult">
+                                                Rate: <span id="rateValue">125</span> mL/hour
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-warning text-dark">
+                                        <i class="fas fa-heartbeat me-2"></i>Pediatric Emergency
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Child's Weight (kg)</label>
+                                            <input type="number" class="form-control" id="childWeight" value="10">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Emergency Drug</label>
+                                            <select class="form-select" id="emergencyDrug">
+                                                <option value="epinephrine">Epinephrine (0.01 mg/kg)</option>
+                                                <option value="atropine">Atropine (0.02 mg/kg)</option>
+                                                <option value="midazolam">Midazolam (0.1 mg/kg)</option>
+                                                <option value="adenosine">Adenosine (0.1 mg/kg)</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-warning w-100" onclick="calculatePediatricDose()">
+                                            Calculate Dose
+                                        </button>
+                                        <div class="mt-3">
+                                            <div class="alert alert-info" id="pediatricDoseResult">
+                                                Dose: <span id="doseValue">0.1</span> mg
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-crosshairs me-2"></i>Emergency Contact Numbers
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3">
+                                            <i class="fas fa-ambulance fa-2x text-danger mb-3"></i>
+                                            <h5>Ambulance</h5>
+                                            <div class="fw-bold">102</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3">
+                                            <i class="fas fa-fire-extinguisher fa-2x text-warning mb-3"></i>
+                                            <h5>Fire</h5>
+                                            <div class="fw-bold">101</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3">
+                                            <i class="fas fa-shield-alt fa-2x text-primary mb-3"></i>
+                                            <h5>Police</h5>
+                                            <div class="fw-bold">100</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Default View -->
+                    <div id="defaultTool" class="text-center py-5">
+                        <i class="fas fa-tools fa-4x text-muted mb-4"></i>
+                        <h3 class="mb-3">Select a Medical Tool</h3>
+                        <p class="text-muted mb-4">
+                            Choose from BMI calculator, dose calculator, GFR calculator, risk scores, unit converters, or emergency tools.
+                        </p>
+                        <div class="row justify-content-center">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <i class="fas fa-calculator fa-2x text-primary mb-3"></i>
+                                        <h5>Quick Calculations</h5>
+                                        <p class="small text-muted">Medical formulas at your fingertips</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tool Instructions -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">Tool Instructions</div>
+                <div class="card-body">
+                    <div id="toolInstructions">
+                        <p class="text-muted">
+                            Select a tool from the categories above to see specific instructions here.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Calculations -->
+            <div class="card mb-4">
+                <div class="card-header">Recent Calculations</div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <div class="fw-bold">BMI Calculation</div>
+                                <small class="text-muted">Today, 10:30 AM</small>
+                            </div>
+                            <span class="badge bg-info">24.2</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <div class="fw-bold">Medication Dose</div>
+                                <small class="text-muted">Yesterday, 15:45 PM</small>
+                            </div>
+                            <span class="badge bg-success">500 mg</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <div class="fw-bold">GFR Calculation</div>
+                                <small class="text-muted">Dec 10, 09:20 AM</small>
+                            </div>
+                            <span class="badge bg-warning">58 mL/min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Favorite Tools -->
+            <div class="card">
+                <div class="card-header">Favorite Tools</div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-doctor" onclick="showTool('bmicalc')">
+                            <i class="fas fa-weight me-2"></i>BMI Calculator
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="showTool('dosecalc')">
+                            <i class="fas fa-pills me-2"></i>Dose Calculator
+                        </button>
+                        <button class="btn btn-outline-success" onclick="showTool('creatinine')">
+                            <i class="fas fa-kidneys me-2"></i>GFR Calculator
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Show selected tool
+    function showTool(toolId) {
+        // Hide all tool containers
+        document.querySelectorAll('.tool-container').forEach(container => {
+            container.style.display = 'none';
+        });
+        
+        // Hide default view
+        document.getElementById('defaultTool').style.display = 'none';
+        
+        // Show selected tool
+        document.getElementById(toolId).style.display = 'block';
+        
+        // Update title
+        const titles = {
+            'bmicalc': 'BMI Calculator',
+            'dosecalc': 'Medication Dose Calculator',
+            'creatinine': 'eGFR Calculator',
+            'padua': 'Padua Risk Score Calculator',
+            'converters': 'Medical Unit Converters',
+            'emergency': 'Emergency Medical Tools'
+        };
+        document.getElementById('toolTitle').textContent = titles[toolId] || 'Medical Tool';
+        
+        // Update instructions
+        const instructions = {
+            'bmicalc': 'Enter weight in kilograms and height in centimeters to calculate Body Mass Index.',
+            'dosecalc': 'Calculate medication doses based on patient weight and recommended dosage.',
+            'creatinine': 'Estimate glomerular filtration rate using the CKD-EPI formula.',
+            'padua': 'Assess venous thromboembolism risk in hospitalized patients.',
+            'converters': 'Convert between different medical units and measurements.',
+            'emergency': 'Emergency calculations and reference information.'
+        };
+        document.getElementById('toolInstructions').innerHTML = `
+            <p>${instructions[toolId]}</p>
+            <div class="alert alert-info small">
+                <i class="fas fa-info-circle me-2"></i>
+                All calculations are for reference only. Always verify with clinical judgment.
+            </div>
+        `;
+    }
+    
+    // BMI Calculator
+    function calculateBMI() {
+        const weight = parseFloat(document.getElementById('weight').value);
+        const height = parseFloat(document.getElementById('height').value);
+        
+        if (!weight || !height || height === 0) {
+            alert('Please enter valid weight and height values.');
+            return;
+        }
+        
+        const heightM = height / 100;
+        const bmi = weight / (heightM * heightM);
+        const roundedBMI = bmi.toFixed(1);
+        
+        // Update display
+        document.getElementById('bmiValue').textContent = `BMI: ${roundedBMI}`;
+        
+        // Update progress bar
+        let progress = 0;
+        let color = 'bg-success';
+        let interpretation = '';
+        
+        if (bmi < 18.5) {
+            progress = (bmi / 18.5) * 25;
+            color = 'bg-info';
+            interpretation = 'Underweight. Consider nutritional assessment and support.';
+        } else if (bmi < 25) {
+            progress = 25 + ((bmi - 18.5) / 6.5) * 25;
+            color = 'bg-success';
+            interpretation = 'Normal weight. Maintain healthy lifestyle.';
+        } else if (bmi < 30) {
+            progress = 50 + ((bmi - 25) / 5) * 25;
+            color = 'bg-warning';
+            interpretation = 'Overweight. Consider lifestyle modifications and weight management.';
+        } else {
+            progress = 75 + ((bmi - 30) / 10) * 25;
+            if (progress > 100) progress = 100;
+            color = 'bg-danger';
+            interpretation = 'Obese. Recommend comprehensive weight management program.';
+        }
+        
+        document.getElementById('bmiProgress').className = `progress-bar ${color}`;
+        document.getElementById('bmiProgress').style.width = `${progress}%`;
+        document.getElementById('bmiInterpretation').innerHTML = interpretation;
+        
+        // Show results
+        document.getElementById('bmiResult').style.display = 'block';
+    }
+    
+    // Dose Calculator
+    function calculateDose() {
+        const weight = parseFloat(document.getElementById('patientWeight').value);
+        const dosePerKg = parseFloat(document.getElementById('dosePerKg').value);
+        const concentration = parseFloat(document.getElementById('concentration').value);
+        const concentrationUnit = document.getElementById('concentrationUnit').value;
+        const frequency = parseInt(document.getElementById('frequency').value);
+        
+        if (!weight || !dosePerKg || !concentration) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        // Calculate total daily dose
+        const totalDailyDose = weight * dosePerKg;
+        const perDose = totalDailyDose / frequency;
+        
+        // Convert concentration based on unit
+        let conversionFactor = 1;
+        if (concentrationUnit === 'g/ml') {
+            conversionFactor = 1000; // 1g = 1000mg
+        } else if (concentrationUnit === 'mg/5ml') {
+            conversionFactor = 0.2; // 5ml contains 1mg = 0.2mg/ml
+        }
+        
+        const effectiveConcentration = concentration * conversionFactor;
+        const volumePerDose = perDose / effectiveConcentration;
+        
+        // Update display
+        document.getElementById('totalDose').textContent = `${totalDailyDose.toFixed(2)} mg/day`;
+        document.getElementById('perDose').textContent = `${perDose.toFixed(2)} mg`;
+        document.getElementById('volumePerDose').textContent = `${volumePerDose.toFixed(2)} ml per dose`;
+        
+        // Show results
+        document.getElementById('doseResult').style.display = 'block';
+    }
+    
+    // GFR Calculator
+    function calculateGFR() {
+        const age = parseInt(document.getElementById('age').value);
+        const gender = document.getElementById('gender').value;
+        const creatinine = parseFloat(document.getElementById('creatinineLevel').value);
+        const race = document.getElementById('race').value;
+        
+        if (!age || !creatinine) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        // Simplified CKD-EPI formula (actual formula is more complex)
+        let gfr;
+        if (gender === 'male') {
+            gfr = 141 * Math.min(creatinine / 0.9, 1) ** -0.411 * Math.max(creatinine / 0.9, 1) ** -1.209 * 0.993 ** age;
+        } else {
+            gfr = 141 * Math.min(creatinine / 0.7, 1) ** -0.329 * Math.max(creatinine / 0.7, 1) ** -1.209 * 0.993 ** age;
+        }
+        
+        // Adjust for race
+        if (race === 'black') {
+            gfr *= 1.159;
+        }
+        
+        const roundedGFR = Math.round(gfr);
+        
+        // Update display
+        document.getElementById('gfrValue').textContent = roundedGFR;
+        
+        // Update progress bar
+        let progress = 0;
+        let color = 'bg-success';
+        let interpretation = '';
+        
+        if (gfr >= 90) {
+            progress = 100;
+            color = 'bg-success';
+            interpretation = 'Normal kidney function.';
+        } else if (gfr >= 60) {
+            progress = 75;
+            color = 'bg-info';
+            interpretation = 'Mildly decreased kidney function. Monitor regularly.';
+        } else if (gfr >= 30) {
+            progress = 50;
+            color = 'bg-warning';
+            interpretation = 'Moderately decreased kidney function. Consider nephrology referral.';
+        } else if (gfr >= 15) {
+            progress = 25;
+            color = 'bg-danger';
+            interpretation = 'Severely decreased kidney function. Nephrology referral recommended.';
+        } else {
+            progress = 10;
+            color = 'bg-dark';
+            interpretation = 'Kidney failure. Requires renal replacement therapy.';
+        }
+        
+        document.getElementById('gfrProgress').className = `progress-bar ${color}`;
+        document.getElementById('gfrProgress').style.width = `${progress}%`;
+        document.getElementById('gfrInterpretation').innerHTML = `
+            <strong>Interpretation:</strong> ${interpretation}<br>
+            <strong>CKD Stage:</strong> ${getCKDStage(gfr)}<br>
+            <small class="text-muted">Based on CKD-EPI formula. For clinical use, verify with measured GFR.</small>
+        `;
+        
+        // Show results
+        document.getElementById('gfrResult').style.display = 'block';
+    }
+    
+    function getCKDStage(gfr) {
+        if (gfr >= 90) return 'Stage 1';
+        if (gfr >= 60) return 'Stage 2';
+        if (gfr >= 30) return 'Stage 3';
+        if (gfr >= 15) return 'Stage 4';
+        return 'Stage 5';
+    }
+    
+    // Padua Score Calculator
+    function calculatePaduaScore() {
+        const checkboxes = [
+            'activeCancer', 'previousVTE', 'reducedMobility', 'thrombophilia',
+            'recentTrauma', 'elderly', 'heartFailure', 'miStroke', 'infection', 'obesity'
+        ];
+        
+        const points = {
+            'activeCancer': 3,
+            'previousVTE': 3,
+            'reducedMobility': 3,
+            'thrombophilia': 3,
+            'recentTrauma': 2,
+            'elderly': 1,
+            'heartFailure': 1,
+            'miStroke': 1,
+            'infection': 1,
+            'obesity': 1
+        };
+        
+        let totalScore = 0;
+        checkboxes.forEach(id => {
+            if (document.getElementById(id).checked) {
+                totalScore += points[id];
+            }
+        });
+        
+        // Update display
+        document.getElementById('paduaValue').textContent = totalScore;
+        
+        let interpretation = '';
+        let prophylaxis = '';
+        
+        if (totalScore >= 4) {
+            interpretation = 'High risk for VTE. Pharmacological prophylaxis recommended.';
+            prophylaxis = 'Consider LMWH, fondaparinux, or UFH unless contraindicated.';
+        } else {
+            interpretation = 'Low risk for VTE. Early ambulation recommended.';
+            prophylaxis = 'Mechanical prophylaxis may be considered.';
+        }
+        
+        document.getElementById('paduaInterpretation').innerHTML = `
+            <strong>Risk Category:</strong> ${totalScore >= 4 ? 'High Risk' : 'Low Risk'}<br>
+            <strong>Interpretation:</strong> ${interpretation}
+        `;
+        
+        document.getElementById('prophylaxisRecommendation').innerHTML = prophylaxis;
+        
+        // Show results
+        document.getElementById('paduaResult').style.display = 'block';
+    }
+    
+    // Unit Converters
+    function convertWeight() {
+        const value = parseFloat(document.getElementById('weightFrom').value);
+        const fromUnit = document.getElementById('weightFromUnit').value;
+        
+        if (!value) {
+            alert('Please enter a value to convert.');
+            return;
+        }
+        
+        let result = '';
+        
+        if (fromUnit === 'kg') {
+            const pounds = value * 2.20462;
+            const grams = value * 1000;
+            result = `${value} kg = ${pounds.toFixed(2)} lb = ${grams.toFixed(0)} g`;
+        } else if (fromUnit === 'lb') {
+            const kg = value * 0.453592;
+            const grams = kg * 1000;
+            result = `${value} lb = ${kg.toFixed(2)} kg = ${grams.toFixed(0)} g`;
+        } else if (fromUnit === 'g') {
+            const kg = value / 1000;
+            const pounds = kg * 2.20462;
+            result = `${value} g = ${kg.toFixed(3)} kg = ${pounds.toFixed(2)} lb`;
+        }
+        
+        document.getElementById('weightResult').textContent = result;
+    }
+    
+    function convertTemperature() {
+        const value = parseFloat(document.getElementById('tempFrom').value);
+        const fromUnit = document.getElementById('tempFromUnit').value;
+        
+        if (!value) {
+            alert('Please enter a value to convert.');
+            return;
+        }
+        
+        let result = '';
+        
+        if (fromUnit === 'c') {
+            const f = (value * 9/5) + 32;
+            const k = value + 273.15;
+            result = `${value}°C = ${f.toFixed(1)}°F = ${k.toFixed(2)} K`;
+        } else if (fromUnit === 'f') {
+            const c = (value - 32) * 5/9;
+            const k = c + 273.15;
+            result = `${value}°F = ${c.toFixed(1)}°C = ${k.toFixed(2)} K`;
+        } else if (fromUnit === 'k') {
+            const c = value - 273.15;
+            const f = (c * 9/5) + 32;
+            result = `${value} K = ${c.toFixed(1)}°C = ${f.toFixed(1)}°F`;
+        }
+        
+        document.getElementById('tempResult').textContent = result;
+    }
+    
+    function convertLab() {
+        const value = parseFloat(document.getElementById('labValue').value);
+        const fromUnit = document.getElementById('labFromUnit').value;
+        const toUnit = document.getElementById('labToUnit').value;
+        
+        if (!value) {
+            alert('Please enter a value to convert.');
+            return;
+        }
+        
+        if (fromUnit === toUnit) {
+            document.getElementById('labResult').textContent = `${value} ${fromUnit}`;
+            return;
+        }
+        
+        let result = 0;
+        
+        // Glucose conversion: mg/dL to mmol/L
+        if (fromUnit === 'mgdl' && toUnit === 'mmoll') {
+            result = value / 18.0182;
+        } else if (fromUnit === 'mmoll' && toUnit === 'mgdl') {
+            result = value * 18.0182;
+        } else {
+            result = value; // Default for other conversions
+        }
+        
+        document.getElementById('labResult').textContent = `${result.toFixed(2)} ${toUnit}`;
+    }
+    
+    // Emergency Tools
+    function calculateIVRate() {
+        const volume = parseFloat(document.getElementById('totalVolume').value);
+        const time = parseFloat(document.getElementById('infusionTime').value);
+        
+        if (!volume || !time || time === 0) {
+            alert('Please enter valid values.');
+            return;
+        }
+        
+        const rate = volume / time;
+        document.getElementById('rateValue').textContent = rate.toFixed(1);
+        document.getElementById('ivRateResult').style.display = 'block';
+    }
+    
+    function calculatePediatricDose() {
+        const weight = parseFloat(document.getElementById('childWeight').value);
+        const drug = document.getElementById('emergencyDrug').value;
+        
+        if (!weight) {
+            alert('Please enter child weight.');
+            return;
+        }
+        
+        const doses = {
+            'epinephrine': 0.01,
+            'atropine': 0.02,
+            'midazolam': 0.1,
+            'adenosine': 0.1
+        };
+        
+        const dose = weight * doses[drug];
+        document.getElementById('doseValue').textContent = dose.toFixed(2);
+        document.getElementById('pediatricDoseResult').style.display = 'block';
+    }
+    
+    // Initialize with default view
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default tool instructions
+        document.getElementById('toolInstructions').innerHTML = `
+            <p class="text-muted">
+                Select a tool from the categories above to see specific instructions here.
+            </p>
+            <div class="alert alert-info small">
+                <i class="fas fa-info-circle me-2"></i>
+                All tools are for medical professionals only. Always verify calculations.
+            </div>
+        `;
+    });
+</script>
+
+<style>
+    .tool-container {
+        min-height: 400px;
+    }
+    
+    .btn-outline-doctor.active {
+        background-color: var(--doctor-color);
+        color: white;
+    }
+    
+    #bmiResult .progress-bar,
+    #gfrResult .progress-bar {
+        transition: width 1s ease-in-out;
+    }
+    
+    .card .card-header.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    
+    .card .card-header.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+    
+    .card .card-header.bg-info {
+        background-color: #0dcaf0 !important;
+    }
+</style>
+{% endblock %}
+{% endblock %}

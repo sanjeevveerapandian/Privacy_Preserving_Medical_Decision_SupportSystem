@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedAI - Medical Decision Support System</title>
+    <style>
+        @font-face {
+            font-family: 'CameraPlainVariable';
+            src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: CameraPlainVariable, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0a1628;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(34, 211, 238, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(6, 182, 212, 0.15) 0%, transparent 50%);
+            animation: gradientShift 20s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            50% {
+                transform: translate(-5%, -5%) rotate(180deg);
+            }
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 22, 40, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 0 40px;
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 80px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            transform: translateY(-1px);
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #c2e9fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .navbar-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 8px 0;
+        }
+
+        .navbar-link:hover {
+            color: #22d3ee;
+        }
+
+        .navbar-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #22d3ee 0%, #06b6d4 100%);
+            transition: width 0.3s ease;
+        }
+
+        .navbar-link:hover::after {
+            width: 100%;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-login {
+            padding: 10px 24px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .btn-login:hover {
+            color: #22d3ee;
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        .btn-get-started {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0a1628;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-get-started:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 211, 238, 0.4);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* Main Content Container */
+        .page-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+        }
+
+        /* Landing Page Styles */
+        .landing-page {
+            padding-top: 80px;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 40px 100px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1000px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: rgba(34, 211, 238, 0.15);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 24px;
+            color: #22d3ee;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-badge svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .hero h1 {
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+        }
+
+        .hero-highlight {
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 800px;
+            margin: 0 auto 48px;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 80px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 18px 44px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0a1628;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(34, 211, 238, 0.4);
+        }
+
+        .btn-secondary {
+            padding: 18px 44px;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .hero-features {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .hero-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-feature svg {
+            width: 20px;
+            height: 20px;
+            color: #22d3ee;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 52px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 0%, #c2e9fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 48px 36px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #22d3ee 0%, #06b6d4 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(34, 211, 238, 0.3);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .feature-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .feature-description {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Roles Section */
+        .roles {
+            padding: 120px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .role-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 56px 32px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .role-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(34, 211, 238, 0.3);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .role-icon {
+            width: 88px;
+            height: 88px;
+            background: rgba(34, 211, 238, 0.2);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            margin: 0 auto 28px;
+            border: 2px solid rgba(34, 211, 238, 0.4);
+        }
+
+        .role-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        .role-description {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Auth Pages */
+        .auth-page {
+            padding-top: 120px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 40px;
+            position: relative;
+        }
+
+        .auth-container {
+            background: rgba(26, 38, 58, 0.95);
+            border-radius: 24px;
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.88),
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 480px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 1;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg,
+                    rgba(34, 211, 238, 0.2) 0%,
+                    rgba(6, 182, 212, 0.2) 100%);
+            color: #ffffff;
+            padding: 48px 40px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.3) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .auth-header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #ffffff 0%, #c2e9fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-header .role-badge {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #c2e9fb;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-content {
+            padding: 40px 40px 36px;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .form-control,
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 16px;
+            color: #ffffff;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-control::placeholder,
+        input::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-control:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='16' height='10' viewBox='0 0 16 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L8 8.5L15 1.5' stroke='%23c2e9fb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 48px;
+        }
+
+        select option {
+            background: #1a263a;
+            color: #ffffff;
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0a1628;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
+            margin-top: 12px;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 211, 238, 0.4);
+        }
+
+        .auth-footer {
+            text-align: center;
+            padding-top: 28px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: 28px;
+        }
+
+        .auth-footer p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .auth-footer a {
+            color: #22d3ee;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .auth-footer a:hover {
+            color: #06b6d4;
+            text-decoration: underline;
+        }
+
+        .helptext {
+            display: block;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .text-danger {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .messages {
+            margin-bottom: 28px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 15px;
+            border: 1px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .alert-error,
+        .alert-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-info {
+            background-color: rgba(34, 211, 238, 0.1);
+            color: #22d3ee;
+            border-color: rgba(34, 211, 238, 0.2);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 60px 40px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: 80px;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-features {
+            display: flex;
+            gap: 32px;
+        }
+
+        .footer-feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+        }
+
+        .footer-feature svg {
+            width: 20px;
+            height: 20px;
+            color: #22d3ee;
+        }
+
+        .footer-copyright {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 15px;
+        }
+
+        /* Role Selection */
+        .role-selection {
+            margin-bottom: 32px;
+        }
+
+        .role-options {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .role-option {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .role-btn {
+            width: 100%;
+            padding: 20px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: button;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .role-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .role-btn.active {
+            background: rgba(34, 211, 238, 0.1);
+            border-color: #22d3ee;
+            color: #ffffff;
+        }
+
+        .role-icon-small {
+            font-size: 24px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(34, 211, 238, 0.3);
+            border-radius: 50%;
+            border-top-color: #22d3ee;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Role Registration Pages */
+        .role-registration-page {
+            padding-top: 120px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 40px;
+            position: relative;
+        }
+
+        .role-registration-container {
+            background: rgba(26, 38, 58, 0.95);
+            border-radius: 24px;
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.88),
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 480px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 1;
+        }
+
+        .role-registration-header {
+            background: linear-gradient(135deg,
+                    rgba(34, 211, 238, 0.2) 0%,
+                    rgba(6, 182, 212, 0.2) 100%);
+            color: #ffffff;
+            padding: 48px 40px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-registration-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.3) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .role-registration-header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #ffffff 0%, #c2e9fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .role-registration-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        .role-registration-content {
+            padding: 40px 40px 36px;
+        }
+
+        .back-button {
+            background: transparent;
+            border: none;
+            color: #22d3ee;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: #06b6d4;
+            transform: translateX(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+
+            .hero h1 {
+                font-size: 56px;
+            }
+
+            .section-title {
+                font-size: 44px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .navbar-menu {
+                display: none;
+                position: absolute;
+                top: 80px;
+                left: 0;
+                right: 0;
+                background: rgba(10, 22, 40, 0.98);
+                flex-direction: column;
+                padding: 20px;
+                gap: 8px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                backdrop-filter: blur(20px);
+            }
+
+            .navbar-menu.active {
+                display: flex;
+            }
+
+            .navbar-link {
+                padding: 12px 0;
+                font-size: 17px;
+            }
+
+            .navbar-actions {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .hero {
+                padding: 120px 20px 60px;
+            }
+
+            .hero h1 {
+                font-size: 42px;
+                letter-spacing: -1px;
+            }
+
+            .hero-description {
+                font-size: 18px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+
+            .section-title {
+                font-size: 36px;
+            }
+
+            .features,
+            .roles {
+                padding: 80px 20px;
+            }
+
+            .auth-page,
+            .role-registration-page {
+                padding-top: 100px;
+            }
+
+            .auth-container,
+            .role-registration-container {
+                max-width: 100%;
+            }
+
+            .auth-header,
+            .role-registration-header {
+                padding: 40px 24px;
+            }
+
+            .auth-header h1,
+            .role-registration-header h1 {
+                font-size: 32px;
+            }
+
+            .auth-content,
+            .role-registration-content {
+                padding: 32px 24px 28px;
+            }
+
+            .footer-container {
+                flex-direction: column;
+                gap: 32px;
+                text-align: center;
+            }
+
+            .footer-features {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .role-options {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .feature-card,
+            .role-card {
+                padding: 36px 24px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-brand" onclick="showPage('landing')">
+                <div class="logo">⚕️</div>
+                <span class="brand-name">MedAI</span>
+            </a>
+            <ul class="navbar-menu" id="navbarMenu">
+                <li><a href="#features" class="navbar-link" onclick="showPage('landing')">Features</a></li>
+                <li><a href="#roles" class="navbar-link" onclick="showPage('landing')">Roles</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <button class="btn-login" onclick="showPage('login')">Login</button>
+                <button class="btn-get-started" onclick="showPage('register')">Get Started</button>
+            </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Page Container -->
+    <div class="page-container">
+        <!-- Landing Page -->
+        <div id="landing-page" class="landing-page">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4m0-4h.01" />
+                    </svg>
+                    AI-Powered Healthcare
+                </div>
+                <h1>
+                    Medical Decision <span class="hero-highlight">Support<br>System</span>
+                </h1>
+                <p class="hero-description">
+                    Secure clinical & research intelligence powered by AI. Get personalized medical guidance with
+                    enterprise-grade security and role-based access.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="showPage('login')">Login to MedAI</button>
+                    <button class="btn-secondary" onclick="showPage('register')">Create Account</button>
+                </div>
+                <div class="hero-features">
+                    <div class="hero-feature">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        HIPAA Compliant
+                    </div>
+                    <div class="hero-feature">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        End-to-End Encrypted
+                    </div>
+                    <div class="hero-feature">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Role-Based Access
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features" class="features">
+                <div class="section-header">
+                    <h2 class="section-title">Intelligent Healthcare at Your Fingertips</h2>
+                    <p class="section-description">
+                        MedAI combines cutting-edge AI with medical expertise to deliver personalized, secure healthcare
+                        support for everyone.
+                    </p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">AI-Powered Assistance</h3>
+                        <p class="feature-description">
+                            Advanced medical AI that understands context, provides evidence-based insights, and adapts
+                            to your role.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h3 class="feature-title">Secure & Confidential</h3>
+                        <p class="feature-description">
+                            Enterprise-grade security with end-to-end encryption. Your medical data stays private and
+                            protected.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3 class="feature-title">Role-Based Access</h3>
+                        <p class="feature-description">
+                            Tailored experiences for patients, doctors, researchers, and administrators with appropriate
+                            permissions.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✓</div>
+                        <h3 class="feature-title">Admin-Controlled Approvals</h3>
+                        <p class="feature-description">
+                            Secure onboarding with admin verification for healthcare professionals and researchers.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roles Section -->
+            <section id="roles" class="roles">
+                <div class="section-header">
+                    <h2 class="section-title">Tailored for Every <span class="hero-highlight">Healthcare Role</span>
+                    </h2>
+                </div>
+                <div class="roles-grid">
+                    <div class="role-card">
+                        <div class="role-icon">👥</div>
+                        <h3 class="role-title">Patient</h3>
+                        <p class="role-description">
+                            Get health guidance and track your wellness journey
+                        </p>
+                    </div>
+                    <div class="role-card">
+                        <div class="role-icon">🩺</div>
+                        <h3 class="role-title">Doctor</h3>
+                        <p class="role-description">
+                            Clinical AI assistant for medical decision support
+                        </p>
+                    </div>
+                    <div class="role-card">
+                        <div class="role-icon">🔬</div>
+                        <h3 class="role-title">Researcher</h3>
+                        <p class="role-description">
+                            Access medical trends and evidence-based insights
+                        </p>
+                    </div>
+                    <div class="role-card">
+                        <div class="role-icon">⚙️</div>
+                        <h3 class="role-title">Admin</h3>
+                        <p class="role-description">
+                            Manage users, approvals, and system settings
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-container">
+                    <div class="footer-brand">
+                        <div class="logo">⚕️</div>
+                        <span class="brand-name">MedAI</span>
+                    </div>
+                    <div class="footer-features">
+                        <div class="footer-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                            HIPAA Compliant
+                        </div>
+                        <div class="footer-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            Secure & Encrypted
+                        </div>
+                    </div>
+                    <div class="footer-copyright">
+                        © 2026 MedAI. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+
+        <style>
+            @media screen and (min-width: 1024px) {
+
+                #researcher-registration-page,
+                #doctor-registration-page,
+                #patient-registration-page,
+                #register-page,
+                #login-page {
+
+                margin-left: 500px;
+                }
+            }
+        </style>
+
+        <!-- Login Page (Centered) -->
+        <div id="login-page" class="auth-page" style="display: none;">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1>Login to MedAI</h1>
+                    <p>Secure healthcare platform access</p>
+                </div>
+
+                <div class="auth-content">
+                    <div class="messages" id="login-messages"></div>
+
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
+                            <input type="text" name="username" id="login-username" class="form-control" required
+                                placeholder="Enter your username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" name="password" id="login-password" class="form-control" required
+                                placeholder="Enter your password">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="login-role">Login As</label>
+                            <select name="role" id="login-role" class="form-control" required>
+                                <option value="">Select your role</option>
+                                <option value="patient">Patient</option>
+                                <option value="doctor">Doctor</option>
+                                <option value="researcher">Researcher</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="login-submit">
+                            <span id="login-text">Sign In</span>
+                            <span id="login-spinner" style="display: none;"><span class="spinner"></span></span>
+                        </button>
+
+                        <div class="auth-footer">
+                            <p>Don't have an account? <a href="#" onclick="showPage('register')">Register here</a></p>
+                            <p style="margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5);">
+                                Forgot your password? <a href="#" style="color: #22d3ee;">Reset it here</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Page (Role Selection) -->
+        <div id="register-page" class="auth-page" style="display: none;">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1>Create Account</h1>
+                    <p>Join our secure healthcare platform</p>
+                </div>
+
+                <div class="auth-content">
+                    <div class="messages" id="register-messages"></div>
+
+                    <div class="role-selection">
+                        <label
+                            style="margin-bottom: 16px; display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; font-size: 15px;">Select
+                            Your Role</label>
+                        <div class="role-options">
+                            <div class="role-option">
+                                <button type="button" class="role-btn" onclick="showPage('patient-registration')">
+                                    <span class="role-icon-small">🧑‍🦱</span>
+                                    Patient
+                                </button>
+                            </div>
+                            <div class="role-option">
+                                <button type="button" class="role-btn" onclick="showPage('doctor-registration')">
+                                    <span class="role-icon-small">👨‍⚕️</span>
+                                    Doctor
+                                </button>
+                            </div>
+                            <div class="role-option">
+                                <button type="button" class="role-btn" onclick="showPage('researcher-registration')">
+                                    <span class="role-icon-small">🔬</span>
+                                    Researcher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="#" onclick="showPage('login')">Sign in here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Registration Page (Centered) -->
+        <div id="patient-registration-page" class="role-registration-page" style="display: none;">
+            <div class="role-registration-container">
+                <div class="role-registration-header">
+                    <h1>Patient Registration</h1>
+                    <p>Create your patient account</p>
+                </div>
+
+                <div class="role-registration-content">
+                    <button class="back-button" onclick="showPage('register')">
+                        ← Back to Role Selection
+                    </button>
+
+                    <div class="messages" id="patient-register-messages"></div>
+
+                    <form id="patient-registration-form">
+                        <input type="hidden" name="role" value="patient">
+
+                        <div class="form-group">
+                            <label for="patient-register-username">Username</label>
+                            <input type="text" name="username" id="patient-register-username" class="form-control"
+                                required placeholder="Choose a username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-email">Email Address</label>
+                            <input type="email" name="email" id="patient-register-email" class="form-control" required
+                                placeholder="your.email@example.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-first-name">First Name</label>
+                            <input type="text" name="first_name" id="patient-register-first-name" class="form-control"
+                                required placeholder="John">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-last-name">Last Name</label>
+                            <input type="text" name="last_name" id="patient-register-last-name" class="form-control"
+                                required placeholder="Doe">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-dob">Date of Birth</label>
+                            <input type="date" name="date_of_birth" id="patient-register-dob" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-phone">Phone Number</label>
+                            <input type="tel" name="phone" id="patient-register-phone" class="form-control"
+                                placeholder="+1234567890">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-password">Password</label>
+                            <input type="password" name="password" id="patient-register-password" class="form-control"
+                                required placeholder="Create a strong password">
+                            <span class="helptext">Password must be at least 8 characters with letters and
+                                numbers</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="patient-register-password2">Confirm Password</label>
+                            <input type="password" name="password2" id="patient-register-password2" class="form-control"
+                                required placeholder="Confirm your password">
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="patient-register-submit">
+                            <span id="patient-register-text">Create Patient Account</span>
+                            <span id="patient-register-spinner" style="display: none;"><span
+                                    class="spinner"></span></span>
+                        </button>
+
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="#" onclick="showPage('login')">Sign in here</a></p>
+                            <p style="margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5);">
+                                Your medical data is secure and encrypted
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctor Registration Page (Centered) -->
+        <div id="doctor-registration-page" class="role-registration-page" style="display: none;">
+            <div class="role-registration-container">
+                <div class="role-registration-header">
+                    <h1>Doctor Registration</h1>
+                    <p>Create your doctor account</p>
+                </div>
+
+                <div class="role-registration-content">
+                    <button class="back-button" onclick="showPage('register')">
+                        ← Back to Role Selection
+                    </button>
+
+                    <div class="messages" id="doctor-register-messages"></div>
+
+                    <form id="doctor-registration-form">
+                        <input type="hidden" name="role" value="doctor">
+
+                        <div class="form-group">
+                            <label for="doctor-register-username">Username</label>
+                            <input type="text" name="username" id="doctor-register-username" class="form-control"
+                                required placeholder="Choose a username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-email">Email Address</label>
+                            <input type="email" name="email" id="doctor-register-email" class="form-control" required
+                                placeholder="your.email@example.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-first-name">First Name</label>
+                            <input type="text" name="first_name" id="doctor-register-first-name" class="form-control"
+                                required placeholder="John">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-last-name">Last Name</label>
+                            <input type="text" name="last_name" id="doctor-register-last-name" class="form-control"
+                                required placeholder="Doe">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-specialization">Specialization</label>
+                            <input type="text" name="specialization" id="doctor-register-specialization"
+                                class="form-control" placeholder="e.g., Cardiology, Neurology" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-license">Medical License Number</label>
+                            <input type="text" name="license_number" id="doctor-register-license" class="form-control"
+                                placeholder="Enter license number" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-password">Password</label>
+                            <input type="password" name="password" id="doctor-register-password" class="form-control"
+                                required placeholder="Create a strong password">
+                            <span class="helptext">Password must be at least 8 characters with letters and
+                                numbers</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="doctor-register-password2">Confirm Password</label>
+                            <input type="password" name="password2" id="doctor-register-password2" class="form-control"
+                                required placeholder="Confirm your password">
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="doctor-register-submit">
+                            <span id="doctor-register-text">Create Doctor Account</span>
+                            <span id="doctor-register-spinner" style="display: none;"><span
+                                    class="spinner"></span></span>
+                        </button>
+
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="#" onclick="showPage('login')">Sign in here</a></p>
+                            <p style="margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5);">
+                                Doctor accounts require admin approval
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Researcher Registration Page (Centered) -->
+        <div id="researcher-registration-page" class="role-registration-page" style="display: none;">
+            <div class="role-registration-container">
+                <div class="role-registration-header">
+                    <h1>Researcher Registration</h1>
+                    <p>Create your researcher account</p>
+                </div>
+
+                <div class="role-registration-content">
+                    <button class="back-button" onclick="showPage('register')">
+                        ← Back to Role Selection
+                    </button>
+
+                    <div class="messages" id="researcher-register-messages"></div>
+
+                    <form id="researcher-registration-form">
+                        <input type="hidden" name="role" value="researcher">
+
+                        <div class="form-group">
+                            <label for="researcher-register-username">Username</label>
+                            <input type="text" name="username" id="researcher-register-username" class="form-control"
+                                required placeholder="Choose a username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-email">Email Address</label>
+                            <input type="email" name="email" id="researcher-register-email" class="form-control"
+                                required placeholder="your.email@example.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-first-name">First Name</label>
+                            <input type="text" name="first_name" id="researcher-register-first-name"
+                                class="form-control" required placeholder="John">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-last-name">Last Name</label>
+                            <input type="text" name="last_name" id="researcher-register-last-name" class="form-control"
+                                required placeholder="Doe">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-institution">Institution/Organization</label>
+                            <input type="text" name="institution" id="researcher-register-institution"
+                                class="form-control" placeholder="e.g., Harvard Medical School" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-area">Research Area</label>
+                            <input type="text" name="research_area" id="researcher-register-area" class="form-control"
+                                placeholder="e.g., Oncology, Genetics" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-password">Password</label>
+                            <input type="password" name="password" id="researcher-register-password"
+                                class="form-control" required placeholder="Create a strong password">
+                            <span class="helptext">Password must be at least 8 characters with letters and
+                                numbers</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="researcher-register-password2">Confirm Password</label>
+                            <input type="password" name="password2" id="researcher-register-password2"
+                                class="form-control" required placeholder="Confirm your password">
+                        </div>
+
+                        <button type="submit" class="btn-auth" id="researcher-register-submit">
+                            <span id="researcher-register-text">Create Researcher Account</span>
+                            <span id="researcher-register-spinner" style="display: none;"><span
+                                    class="spinner"></span></span>
+                        </button>
+
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="#" onclick="showPage('login')">Sign in here</a></p>
+                            <p style="margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5);">
+                                Researcher accounts require admin approval
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Page navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('register-page').style.display = 'none';
+            document.getElementById('patient-registration-page').style.display = 'none';
+            document.getElementById('doctor-registration-page').style.display = 'none';
+            document.getElementById('researcher-registration-page').style.display = 'none';
+
+            // Show selected page
+            document.getElementById(pageId + '-page').style.display = 'block';
+
+            // Reset forms when switching pages
+            if (pageId === 'login') {
+                document.getElementById('login-form').reset();
+                document.getElementById('login-messages').innerHTML = '';
+            } else if (pageId === 'patient-registration') {
+                document.getElementById('patient-registration-form').reset();
+                document.getElementById('patient-register-messages').innerHTML = '';
+            } else if (pageId === 'doctor-registration') {
+                document.getElementById('doctor-registration-form').reset();
+                document.getElementById('doctor-register-messages').innerHTML = '';
+            } else if (pageId === 'researcher-registration') {
+                document.getElementById('researcher-registration-form').reset();
+                document.getElementById('researcher-register-messages').innerHTML = '';
+            }
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+
+            // Close mobile menu if open
+            document.getElementById('navbarMenu').classList.remove('active');
+        }
+
+        // Form submission handlers
+        document.getElementById('login-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const role = document.getElementById('login-role').value;
+
+            if (!username || !password || !role) {
+                showMessage('login-messages', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('login-submit');
+            const loginText = document.getElementById('login-text');
+            const loginSpinner = document.getElementById('login-spinner');
+
+            submitBtn.disabled = true;
+            loginText.textContent = 'Signing in...';
+            loginSpinner.style.display = 'inline-block';
+
+            try {
+                // Make API call to Django login endpoint
+                const response = await fetch('/api/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        role: role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('login-messages', 'Login successful! Redirecting...', 'success');
+
+                    // Redirect based on role
+                    setTimeout(() => {
+                        const redirectUrls = {
+                            'patient': '/patient/dashboard/',
+                            'doctor': '/doctor/dashboard/',
+                            'researcher': '/researcher/dashboard/',
+                            'admin': '/admin/dashboard/'
+                        };
+
+                        window.location.href = redirectUrls[role] || '/dashboard/';
+                    }, 1500);
+                } else {
+                    showMessage('login-messages', data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showMessage('login-messages', 'Network error. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                loginText.textContent = 'Sign In';
+                loginSpinner.style.display = 'none';
+            }
+        });
+
+        // Patient registration form submission handler
+        document.getElementById('patient-registration-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('patient-register-password').value;
+            const password2 = document.getElementById('patient-register-password2').value;
+
+            if (password !== password2) {
+                showMessage('patient-register-messages', 'Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showMessage('patient-register-messages', 'Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('patient-register-submit');
+            const registerText = document.getElementById('patient-register-text');
+            const registerSpinner = document.getElementById('patient-register-spinner');
+
+            submitBtn.disabled = true;
+            registerText.textContent = 'Creating account...';
+            registerSpinner.style.display = 'inline-block';
+
+            try {
+                // Prepare form data
+                const formData = {
+                    username: document.getElementById('patient-register-username').value,
+                    email: document.getElementById('patient-register-email').value,
+                    first_name: document.getElementById('patient-register-first-name').value,
+                    last_name: document.getElementById('patient-register-last-name').value,
+                    password1: password,
+                    password2: password2,
+                    role: 'patient',
+                    date_of_birth: document.getElementById('patient-register-dob').value,
+                    phone: document.getElementById('patient-register-phone').value
+                };
+
+                // Make API call to Django registration endpoint
+                const response = await fetch('/api/register/patient/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('patient-register-messages', 'Account created successfully! You can now login.', 'success');
+
+                    // Reset form after successful registration
+                    setTimeout(() => {
+                        document.getElementById('patient-registration-form').reset();
+                        showPage('login');
+                    }, 3000);
+                } else {
+                    showMessage('patient-register-messages', data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('patient-register-messages', 'Network error. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                registerText.textContent = 'Create Patient Account';
+                registerSpinner.style.display = 'none';
+            }
+        });
+
+        // Doctor registration form submission handler
+        document.getElementById('doctor-registration-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('doctor-register-password').value;
+            const password2 = document.getElementById('doctor-register-password2').value;
+
+            if (password !== password2) {
+                showMessage('doctor-register-messages', 'Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showMessage('doctor-register-messages', 'Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('doctor-register-submit');
+            const registerText = document.getElementById('doctor-register-text');
+            const registerSpinner = document.getElementById('doctor-register-spinner');
+
+            submitBtn.disabled = true;
+            registerText.textContent = 'Creating account...';
+            registerSpinner.style.display = 'inline-block';
+
+            try {
+                // Prepare form data
+                const formData = {
+                    username: document.getElementById('doctor-register-username').value,
+                    email: document.getElementById('doctor-register-email').value,
+                    first_name: document.getElementById('doctor-register-first-name').value,
+                    last_name: document.getElementById('doctor-register-last-name').value,
+                    password1: password,
+                    password2: password2,
+                    role: 'doctor',
+                    specialization: document.getElementById('doctor-register-specialization').value,
+                    license_number: document.getElementById('doctor-register-license').value
+                };
+
+                // Make API call to Django registration endpoint
+                const response = await fetch('/api/register/doctor/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('doctor-register-messages', 'Account created successfully! Awaiting admin approval.', 'success');
+
+                    // Reset form after successful registration
+                    setTimeout(() => {
+                        document.getElementById('doctor-registration-form').reset();
+                        showPage('login');
+                    }, 3000);
+                } else {
+                    showMessage('doctor-register-messages', data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('doctor-register-messages', 'Network error. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                registerText.textContent = 'Create Doctor Account';
+                registerSpinner.style.display = 'none';
+            }
+        });
+
+        // Researcher registration form submission handler
+        document.getElementById('researcher-registration-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('researcher-register-password').value;
+            const password2 = document.getElementById('researcher-register-password2').value;
+
+            if (password !== password2) {
+                showMessage('researcher-register-messages', 'Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showMessage('researcher-register-messages', 'Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('researcher-register-submit');
+            const registerText = document.getElementById('researcher-register-text');
+            const registerSpinner = document.getElementById('researcher-register-spinner');
+
+            submitBtn.disabled = true;
+            registerText.textContent = 'Creating account...';
+            registerSpinner.style.display = 'inline-block';
+
+            try {
+                // Prepare form data
+                const formData = {
+                    username: document.getElementById('researcher-register-username').value,
+                    email: document.getElementById('researcher-register-email').value,
+                    first_name: document.getElementById('researcher-register-first-name').value,
+                    last_name: document.getElementById('researcher-register-last-name').value,
+                    password1: password,
+                    password2: password2,
+                    role: 'researcher',
+                    institution: document.getElementById('researcher-register-institution').value,
+                    research_area: document.getElementById('researcher-register-area').value
+                };
+
+                // Make API call to Django registration endpoint
+                const response = await fetch('/api/register/researcher/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('researcher-register-messages', 'Account created successfully! Awaiting admin approval.', 'success');
+
+                    // Reset form after successful registration
+                    setTimeout(() => {
+                        document.getElementById('researcher-registration-form').reset();
+                        showPage('login');
+                    }, 3000);
+                } else {
+                    showMessage('researcher-register-messages', data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('researcher-register-messages', 'Network error. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                registerText.textContent = 'Create Researcher Account';
+                registerSpinner.style.display = 'none';
+            }
+        });
+
+        function showMessage(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.textContent = message;
+
+            // Clear previous messages
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Get CSRF token from cookies
+        function getCsrfToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navbarMenu');
+            menu.classList.toggle('active');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function (event) {
+            const menu = document.getElementById('navbarMenu');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
+
+            if (menu.classList.contains('active') &&
+                !menu.contains(event.target) &&
+                !toggleBtn.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // Handle anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                if (this.getAttribute('href') !== '#') {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Initialize landing page
+        showPage('landing');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1283 @@
+<!-- templates/patient/book_appointment.html -->
+{% extends 'patient_base.html' %}
+{% load static %}
+
+{% block title %}Book Appointment - Patient Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doctor-card {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+    }
+    
+    .doctor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .doctor-card.selected {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    
+    .doctor-avatar-lg {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #0d6efd;
+    }
+    
+    .availability-badge {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+    }
+    
+    .time-slot {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        min-width: 100px;
+    }
+    
+    .time-slot:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .time-slot.selected {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        font-weight: bold;
+    }
+    
+    .time-slot.booked {
+        border-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    
+    .time-slot.available {
+        border-color: #198754;
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .calendar-day {
+        text-align: center;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .calendar-day:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .calendar-day.today {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .calendar-day.selected {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .calendar-day.unavailable {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+    
+    .progress-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .step {
+        text-align: center;
+        flex: 1;
+    }
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .step.active .step-circle {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .step.completed .step-circle {
+        background-color: #198754;
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .step.active .step-label {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+    
+    .step-line {
+        flex: 1;
+        height: 2px;
+        background-color: #e9ecef;
+        margin: 20px 10px 0;
+    }
+    
+    .form-section {
+        display: none;
+    }
+    
+    .form-section.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255,255,255,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        flex-direction: column;
+    }
+    
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #0d6efd;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<!-- Progress Steps -->
+<div class="progress-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="step active" id="step1">
+            <div class="step-circle">1</div>
+            <div class="step-label">Choose Doctor</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step2">
+            <div class="step-circle">2</div>
+            <div class="step-label">Select Date & Time</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step3">
+            <div class="step-circle">3</div>
+            <div class="step-label">Add Details</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step4">
+            <div class="step-circle">4</div>
+            <div class="step-label">Confirm Booking</div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 1: Choose Doctor -->
+<div class="form-section active" id="step1Section">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3 class="h4 mb-3">Select a Doctor</h3>
+            <p class="text-muted">Choose from our available healthcare professionals. You can filter by specialization.</p>
+        </div>
+    </div>
+    
+    <!-- Doctor Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" id="doctorSearch" placeholder="Search doctors by name or specialization...">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <select class="form-select" id="specializationFilter">
+                <option value="">All Specializations</option>
+                <option value="cardiology">Cardiology</option>
+                <option value="neurology">Neurology</option>
+                <option value="pediatrics">Pediatrics</option>
+                <option value="orthopedics">Orthopedics</option>
+                <option value="dermatology">Dermatology</option>
+                <option value="psychiatry">Psychiatry</option>
+                <option value="general">General Practice</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Doctors List -->
+    <div class="row g-4" id="doctorsList">
+        {% if doctor %}
+            <!-- Pre-selected doctor -->
+            <div class="col-lg-4 col-md-6">
+                <div class="doctor-card selected p-4" onclick="selectDoctor({{ doctor.id }})">
+                    <div class="text-center mb-3">
+                        {% if doctor.profile_picture %}
+                        <img src="{{ doctor.profile_picture.url }}" alt="Dr. {{ doctor.get_full_name }}" class="doctor-avatar-lg mb-3">
+                        {% else %}
+                        <div class="doctor-avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto">
+                            <i class="fas fa-user-md fa-2x"></i>
+                        </div>
+                        {% endif %}
+                        <h5 class="mb-1">Dr. {{ doctor.get_full_name }}</h5>
+                        <div class="text-muted mb-2">{{ doctor.specialization|default:"General Practitioner" }}</div>
+                        <div class="mb-3">
+                            <span class="badge bg-success availability-badge">
+                                <i class="fas fa-check-circle me-1"></i> Available Today
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-star text-warning me-1"></i>
+                            4.8 (124 reviews)
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>
+                            Usually responds in 2 hours
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- All doctors -->
+            {% for doc in doctors %}
+            <div class="col-lg-4 col-md-6">
+                <div class="doctor-card p-4" onclick="selectDoctor({{ doc.id }})" data-specialization="{{ doc.specialization|lower }}">
+                    <div class="text-center mb-3">
+                        {% if doc.profile_picture %}
+                        <img src="{{ doc.profile_picture.url }}" alt="Dr. {{ doc.get_full_name }}" class="doctor-avatar-lg mb-3">
+                        {% else %}
+                        <div class="doctor-avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto">
+                            <i class="fas fa-user-md fa-2x"></i>
+                        </div>
+                        {% endif %}
+                        <h5 class="mb-1">Dr. {{ doc.get_full_name }}</h5>
+                        <div class="text-muted mb-2">{{ doc.specialization|default:"General Practitioner" }}</div>
+                        <div class="mb-3">
+                            <span class="badge bg-success availability-badge">
+                                <i class="fas fa-check-circle me-1"></i> Available
+                            </span>
+                            <span class="badge bg-info availability-badge ms-1">
+                                <i class="fas fa-video me-1"></i> Video Consult
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-star text-warning me-1"></i>
+                            4.{% cycle '5' '8' '3' '7' '9' '2' '6' '4' %} 
+                            ({% cycle '89' '124' '67' '203' '45' '156' '78' '92' %} reviews)
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>
+                            Usually responds in {% cycle '1' '2' '3' '4' '2' '1' '3' '2' %} hours
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-md-12 text-center py-5">
+                <i class="fas fa-user-md fa-4x text-muted mb-3"></i>
+                <h4>No doctors available</h4>
+                <p class="text-muted">Please check back later or contact support.</p>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <!-- Selected Doctor Info (Hidden Initially) -->
+    <div class="row mt-4" id="selectedDoctorInfo" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div id="selectedDoctorAvatar" style="width: 60px; height: 60px; border-radius: 50%; background-color: #0d6efd; color: white; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user-md fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1" id="selectedDoctorName">Dr. John Smith</h5>
+                            <p class="text-muted mb-0" id="selectedDoctorSpecialty">Cardiologist</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-secondary" onclick="changeDoctor()">
+                                <i class="fas fa-edit me-1"></i> Change Doctor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="row mt-4">
+        <div class="col-md-12 text-end">
+            <button class="btn btn-primary btn-lg px-5" onclick="goToStep(2)" id="nextStep1" {% if not doctor and doctors|length == 0 %}disabled{% endif %}>
+                Next <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Step 2: Select Date & Time -->
+<div class="form-section" id="step2Section">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3 class="h4 mb-3">Select Date & Time</h3>
+            <p class="text-muted">Choose an available time slot for your appointment.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Calendar -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-calendar me-2"></i>Select Date</h6>
+                </div>
+                <div class="card-body">
+                    <div id="appointmentCalendar"></div>
+                </div>
+            </div>
+            
+            <!-- Appointment Type -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Appointment Type</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="appointmentType" id="typeConsultation" value="consultation" checked>
+                        <label class="form-check-label" for="typeConsultation">
+                            <i class="fas fa-comment-medical me-2"></i> Consultation
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="appointmentType" id="typeFollowUp" value="follow_up">
+                        <label class="form-check-label" for="typeFollowUp">
+                            <i class="fas fa-redo me-2"></i> Follow-up
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="appointmentType" id="typeRoutine" value="routine_checkup">
+                        <label class="form-check-label" for="typeRoutine">
+                            <i class="fas fa-heartbeat me-2"></i> Routine Checkup
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="appointmentType" id="typeEmergency" value="emergency">
+                        <label class="form-check-label" for="typeEmergency">
+                            <i class="fas fa-exclamation-triangle me-2 text-danger"></i> Emergency
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Time Slots -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Available Time Slots</h6>
+                </div>
+                <div class="card-body">
+                    <div id="timeSlotsContainer">
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                            <p>Please select a date to view available time slots</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected Time Summary -->
+            <div class="card mt-4" id="selectedTimeCard" style="display: none;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Selected Appointment Time</h6>
+                            <p class="mb-0" id="selectedTimeText">Date: Not selected | Time: Not selected</p>
+                        </div>
+                        <button class="btn btn-outline-secondary" onclick="changeTime()">
+                            <i class="fas fa-edit me-1"></i> Change
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Urgent Appointment -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="urgentAppointment">
+                        <label class="form-check-label" for="urgentAppointment">
+                            <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                            Mark as Urgent Appointment
+                        </label>
+                    </div>
+                    <small class="text-muted">Urgent appointments will be prioritized by the doctor.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <button class="btn btn-outline-secondary btn-lg px-4" onclick="goToStep(1)">
+                <i class="fas fa-arrow-left me-2"></i> Back
+            </button>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary btn-lg px-5" onclick="goToStep(3)" id="nextStep2" disabled>
+                Next <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Step 3: Add Details -->
+<div class="form-section" id="step3Section">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3 class="h4 mb-3">Appointment Details</h3>
+            <p class="text-muted">Provide details about your appointment to help the doctor prepare.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <form id="appointmentDetailsForm">
+                {% csrf_token %}
+                
+                <!-- Hidden fields for selected data -->
+                <input type="hidden" id="selectedDoctorId" name="doctor" value="{{ doctor.id|default:'' }}">
+                <input type="hidden" id="selectedDate" name="appointment_date">
+                <input type="hidden" id="selectedTime" name="appointment_time">
+                <input type="hidden" id="selectedAppointmentType" name="appointment_type" value="consultation">
+                
+                <div class="mb-4">
+                    <label for="reason" class="form-label">
+                        <i class="fas fa-question-circle me-2"></i>Reason for Appointment *
+                    </label>
+                    <textarea class="form-control" id="reason" name="reason" rows="3" 
+                              placeholder="Please describe the reason for your appointment in detail..."
+                              required></textarea>
+                    <small class="text-muted">Be as specific as possible to help your doctor prepare.</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="symptoms" class="form-label">
+                        <i class="fas fa-thermometer-half me-2"></i>Symptoms (Optional)
+                    </label>
+                    <textarea class="form-control" id="symptoms" name="symptoms" rows="2" 
+                              placeholder="List any symptoms you're experiencing..."></textarea>
+                    <small class="text-muted">Separate symptoms with commas.</small>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="medicalHistory" class="form-label">
+                        <i class="fas fa-history me-2"></i>Relevant Medical History (Optional)
+                    </label>
+                    <textarea class="form-control" id="medicalHistory" name="medical_history" rows="2" 
+                              placeholder="Any relevant medical history, medications, or allergies..."></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="additionalNotes" class="form-label">
+                        <i class="fas fa-sticky-note me-2"></i>Additional Notes (Optional)
+                    </label>
+                    <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="2" 
+                              placeholder="Any other information you'd like to share with the doctor..."></textarea>
+                </div>
+                
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="videoConsultation" name="video_consultation">
+                    <label class="form-check-label" for="videoConsultation">
+                        <i class="fas fa-video me-2"></i> Prefer video consultation if available
+                    </label>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Important:</strong> Please arrive 10 minutes before your scheduled appointment time.
+                    Bring any relevant medical documents with you.
+                </div>
+            </form>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Appointment Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>Appointment Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Doctor</small>
+                        <strong id="summaryDoctor">Not selected</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Date & Time</small>
+                        <strong id="summaryDateTime">Not selected</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Type</small>
+                        <strong id="summaryType">Consultation</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Duration</small>
+                        <strong>30 minutes</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Status</small>
+                        <span class="badge bg-warning">Pending Confirmation</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Estimated Wait Time</small>
+                        <strong>1-2 business days</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Insurance Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Insurance</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-2">This appointment may be covered by your insurance.</p>
+                    <button class="btn btn-sm btn-outline-primary w-100" onclick="checkInsurance()">
+                        <i class="fas fa-search me-1"></i> Check Coverage
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <button class="btn btn-outline-secondary btn-lg px-4" onclick="goToStep(2)">
+                <i class="fas fa-arrow-left me-2"></i> Back
+            </button>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary btn-lg px-5" onclick="goToStep(4)">
+                Review & Book <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Step 4: Confirm Booking -->
+<div class="form-section" id="step4Section">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3 class="h4 mb-3">Review & Confirm Booking</h3>
+            <p class="text-muted">Please review your appointment details before confirming.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Final Review -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Appointment Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Doctor</small>
+                                <h5 id="reviewDoctor">Not selected</h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Date</small>
+                                <h5 id="reviewDate">Not selected</h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Time</small>
+                                <h5 id="reviewTime">Not selected</h5>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Appointment Type</small>
+                                <h5 id="reviewType">Consultation</h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Duration</small>
+                                <h5>30 minutes</h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Urgent</small>
+                                <h5 id="reviewUrgent">No</h5>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Reason</small>
+                        <p id="reviewReason" class="mb-0">Not provided</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Symptoms</small>
+                        <p id="reviewSymptoms" class="mb-0">Not provided</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Terms & Conditions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>Terms & Conditions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="termsCancellation">
+                        <label class="form-check-label" for="termsCancellation">
+                            I understand that cancellations less than 24 hours before the appointment may be subject to a fee.
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="termsPrivacy">
+                        <label class="form-check-label" for="termsPrivacy">
+                            I consent to the collection and use of my personal information as per the privacy policy.
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="termsMedical">
+                        <label class="form-check-label" for="termsMedical">
+                            I confirm that the information provided is accurate to the best of my knowledge.
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="termsEmergency">
+                        <label class="form-check-label" for="termsEmergency">
+                            I understand that this service is not for medical emergencies. In case of emergency, I will call 911.
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Confirmation Card -->
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Ready to Book</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
+                        <h5>Almost Done!</h5>
+                        <p class="text-muted">Review all details and confirm your appointment.</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-lg" id="confirmBookingBtn" onclick="confirmBooking()" disabled>
+                            <i class="fas fa-check-circle me-2"></i> Confirm Booking
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="goToStep(3)">
+                            <i class="fas fa-edit me-2"></i> Edit Details
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>
+                            Your information is secure and encrypted
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <button class="btn btn-outline-secondary btn-lg px-4" onclick="goToStep(3)">
+                <i class="fas fa-arrow-left me-2"></i> Back to Details
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <h3 class="mt-4">Processing Your Appointment</h3>
+    <p class="text-muted">Please wait while we book your appointment...</p>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Appointment Booked!</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-calendar-check fa-4x text-success mb-3"></i>
+                <h4>Appointment Request Sent</h4>
+                <p class="text-muted">Your appointment request has been sent to the doctor for confirmation.</p>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You will receive a notification once the doctor confirms your appointment.
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-primary" onclick="viewAppointments()">
+                    <i class="fas fa-calendar-alt me-2"></i> View My Appointments
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="bookAnother()">
+                    <i class="fas fa-plus me-2"></i> Book Another
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedDoctor = {% if doctor %}{{ doctor.id }}{% else %}null{% endif %};
+    let selectedDate = null;
+    let selectedTime = null;
+    let selectedAppointmentType = 'consultation';
+    let isUrgent = false;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initCalendar();
+        setupEventListeners();
+        
+        {% if doctor %}
+            selectDoctor({{ doctor.id }});
+        {% endif %}
+    });
+    
+    // Setup event listeners
+    function setupEventListeners() {
+        // Doctor search
+        document.getElementById('doctorSearch').addEventListener('input', filterDoctors);
+        document.getElementById('specializationFilter').addEventListener('change', filterDoctors);
+        
+        // Appointment type
+        document.querySelectorAll('input[name="appointmentType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                selectedAppointmentType = this.value;
+                updateSummary();
+            });
+        });
+        
+        // Urgent appointment
+        document.getElementById('urgentAppointment').addEventListener('change', function() {
+            isUrgent = this.checked;
+            updateSummary();
+        });
+        
+        // Terms checkboxes
+        document.querySelectorAll('#step4Section input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', validateTerms);
+        });
+        
+        // Reason textarea
+        document.getElementById('reason').addEventListener('input', validateStep3);
+    }
+    
+    // Filter doctors
+    function filterDoctors() {
+        const searchTerm = document.getElementById('doctorSearch').value.toLowerCase();
+        const specialization = document.getElementById('specializationFilter').value.toLowerCase();
+        
+        document.querySelectorAll('.doctor-card').forEach(card => {
+            const doctorName = card.querySelector('h5').textContent.toLowerCase();
+            const doctorSpecialization = card.getAttribute('data-specialization') || '';
+            const matchesSearch = doctorName.includes(searchTerm);
+            const matchesSpecialization = !specialization || doctorSpecialization.includes(specialization);
+            
+            if (matchesSearch && matchesSpecialization) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Select doctor
+    function selectDoctor(doctorId) {
+        selectedDoctor = doctorId;
+        
+        // Update UI
+        document.querySelectorAll('.doctor-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        const doctorCard = document.querySelector(`.doctor-card[onclick*="${doctorId}"]`);
+        if (doctorCard) {
+            doctorCard.classList.add('selected');
+            
+            // Update selected doctor info
+            const doctorName = doctorCard.querySelector('h5').textContent;
+            const doctorSpecialty = doctorCard.querySelector('.text-muted.mb-2').textContent;
+            
+            document.getElementById('selectedDoctorName').textContent = doctorName;
+            document.getElementById('selectedDoctorSpecialty').textContent = doctorSpecialty;
+            
+            // Update avatar
+            const avatarImg = doctorCard.querySelector('img');
+            const avatarDiv = document.getElementById('selectedDoctorAvatar');
+            if (avatarImg) {
+                avatarDiv.innerHTML = `<img src="${avatarImg.src}" alt="${doctorName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                avatarDiv.innerHTML = '<i class="fas fa-user-md fa-2x"></i>';
+            }
+            
+            document.getElementById('selectedDoctorInfo').style.display = 'block';
+            document.getElementById('selectedDoctorId').value = doctorId;
+            
+            // Update summary
+            updateSummary();
+        }
+        
+        // Enable next button
+        document.getElementById('nextStep1').disabled = false;
+    }
+    
+    // Change doctor
+    function changeDoctor() {
+        goToStep(1);
+    }
+    
+    // Initialize calendar
+    function initCalendar() {
+        const calendarEl = document.getElementById('appointmentCalendar');
+        const today = new Date();
+        
+        // Generate calendar for next 30 days
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        let calendarHTML = `
+            <div class="text-center mb-3">
+                <h6 class="mb-0">${monthNames[today.getMonth()]} ${today.getFullYear()}</h6>
+            </div>
+            <div class="row g-1 mb-2">
+        `;
+        
+        // Add day headers
+        dayNames.forEach(day => {
+            calendarHTML += `
+                <div class="col text-center">
+                    <small class="text-muted fw-bold">${day}</small>
+                </div>
+            `;
+        });
+        
+        calendarHTML += '</div><div class="row g-1">';
+        
+        // Add empty cells for days before first of month
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+        for (let i = 0; i < firstDay; i++) {
+            calendarHTML += '<div class="col"><div class="calendar-day unavailable">&nbsp;</div></div>';
+        }
+        
+        // Add days for current month
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isToday = day === today.getDate();
+            const isPast = day < today.getDate();
+            
+            calendarHTML += `
+                <div class="col">
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${isPast ? 'unavailable' : ''}"
+                         onclick="${isPast ? '' : `selectDate('${dateStr}')`}"
+                         data-date="${dateStr}">
+                        ${day}
+                    </div>
+                </div>
+            `;
+            
+            // Start new row after Saturday
+            if ((firstDay + day) % 7 === 0 && day < daysInMonth) {
+                calendarHTML += '</div><div class="row g-1">';
+            }
+        }
+        
+        calendarHTML += '</div>';
+        calendarEl.innerHTML = calendarHTML;
+    }
+    
+    // Select date
+    function selectDate(dateStr) {
+        selectedDate = dateStr;
+        
+        // Update UI
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.classList.remove('selected');
+        });
+        
+        const selectedDay = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+        if (selectedDay) {
+            selectedDay.classList.add('selected');
+            
+            // Load available time slots
+            loadTimeSlots(dateStr);
+            
+            // Update summary
+            updateSummary();
+        }
+    }
+    
+    // Load time slots
+    function loadTimeSlots(dateStr) {
+        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+        timeSlotsContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading available time slots...</p>
+            </div>
+        `;
+        
+        // Simulate API call
+        setTimeout(() => {
+            const timeSlots = [
+                '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+                '15:00', '15:30', '16:00', '16:30'
+            ];
+            
+            // Mark some slots as booked
+            const bookedSlots = ['10:00', '11:30', '14:00', '15:30'];
+            
+            let slotsHTML = '<div class="d-flex flex-wrap justify-content-center">';
+            
+            timeSlots.forEach(slot => {
+                const isBooked = bookedSlots.includes(slot);
+                const isSelected = selectedTime === slot;
+                
+                slotsHTML += `
+                    <div class="time-slot ${isBooked ? 'booked' : 'available'} ${isSelected ? 'selected' : ''}"
+                         onclick="${isBooked ? '' : `selectTime('${slot}')`}">
+                        ${formatTime(slot)}
+                        ${isBooked ? '<br><small class="text-danger">Booked</small>' : ''}
+                    </div>
+                `;
+            });
+            
+            slotsHTML += '</div>';
+            timeSlotsContainer.innerHTML = slotsHTML;
+        }, 1000);
+    }
+    
+    // Select time
+    function selectTime(timeStr) {
+        selectedTime = timeStr;
+        
+        // Update UI
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.classList.remove('selected');
+        });
+        
+        const selectedSlot = document.querySelector(`.time-slot[onclick*="${timeStr}"]`);
+        if (selectedSlot) {
+            selectedSlot.classList.add('selected');
+            
+            // Show selected time card
+            const selectedTimeCard = document.getElementById('selectedTimeCard');
+            const selectedTimeText = document.getElementById('selectedTimeText');
+            
+            selectedTimeText.textContent = `Date: ${formatDate(selectedDate)} | Time: ${formatTime(selectedTime)}`;
+            selectedTimeCard.style.display = 'block';
+            
+            // Enable next button
+            document.getElementById('nextStep2').disabled = false;
+            
+            // Update form fields
+            document.getElementById('selectedDate').value = selectedDate;
+            document.getElementById('selectedTime').value = selectedTime;
+            
+            // Update summary
+            updateSummary();
+        }
+    }
+    
+    // Change time
+    function changeTime() {
+        goToStep(2);
+    }
+    
+    // Format time for display
+    function formatTime(timeStr) {
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    }
+    
+    // Format date for display
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    }
+    
+    // Navigation between steps
+    function goToStep(step) {
+        // Update steps
+        for (let i = 1; i <= 4; i++) {
+            const stepEl = document.getElementById(`step${i}`);
+            const sectionEl = document.getElementById(`step${i}Section`);
+            
+            if (i === step) {
+                stepEl.classList.add('active');
+                sectionEl.classList.add('active');
+            } else {
+                stepEl.classList.remove('active');
+                sectionEl.classList.remove('active');
+                
+                // Mark previous steps as completed
+                if (i < step) {
+                    stepEl.classList.add('completed');
+                } else {
+                    stepEl.classList.remove('completed');
+                }
+            }
+        }
+        
+        // Update progress badge
+        const badge = document.querySelector('.badge.bg-primary.fs-6');
+        if (badge) {
+            badge.innerHTML = `<i class="fas fa-calendar-check me-1"></i> Step ${step} of 4`;
+        }
+        
+        // Update summary if we're on step 3 or 4
+        if (step >= 3) {
+            updateSummary();
+        }
+    }
+    
+    // Update summary information
+    function updateSummary() {
+        // Step 3 summary
+        if (selectedDoctor) {
+            const doctorCard = document.querySelector(`.doctor-card[onclick*="${selectedDoctor}"]`);
+            if (doctorCard) {
+                const doctorName = doctorCard.querySelector('h5').textContent;
+                document.getElementById('summaryDoctor').textContent = doctorName;
+                document.getElementById('reviewDoctor').textContent = doctorName;
+            }
+        }
+        
+        if (selectedDate && selectedTime) {
+            const dateTimeStr = `${formatDate(selectedDate)} at ${formatTime(selectedTime)}`;
+            document.getElementById('summaryDateTime').textContent = dateTimeStr;
+            document.getElementById('reviewDate').textContent = formatDate(selectedDate);
+            document.getElementById('reviewTime').textContent = formatTime(selectedTime);
+        }
+        
+        // Appointment type
+        document.getElementById('summaryType').textContent = 
+            document.getElementById('selectedAppointmentType').value.replace('_', ' ').toUpperCase();
+        document.getElementById('reviewType').textContent = 
+            selectedAppointmentType.replace('_', ' ').toUpperCase();
+        
+        // Urgent
+        document.getElementById('reviewUrgent').textContent = isUrgent ? 'Yes' : 'No';
+        
+        // Reason and symptoms for step 4
+        const reason = document.getElementById('reason').value;
+        const symptoms = document.getElementById('symptoms').value;
+        
+        document.getElementById('reviewReason').textContent = reason || 'Not provided';
+        document.getElementById('reviewSymptoms').textContent = symptoms || 'Not provided';
+    }
+    
+    // Validate step 3
+    function validateStep3() {
+        const reason = document.getElementById('reason').value.trim();
+        return reason.length > 0;
+    }
+    
+    // Validate terms
+    function validateTerms() {
+        const terms1 = document.getElementById('termsCancellation').checked;
+        const terms2 = document.getElementById('termsPrivacy').checked;
+        const terms3 = document.getElementById('termsMedical').checked;
+        const terms4 = document.getElementById('termsEmergency').checked;
+        
+        const allChecked = terms1 && terms2 && terms3 && terms4;
+        document.getElementById('confirmBookingBtn').disabled = !allChecked;
+    }
+    
+    // Confirm booking
+    function confirmBooking() {
+        if (!validateStep3()) {
+            showAlert('Please provide a reason for your appointment', 'error');
+            return;
+        }
+        
+        // Show loading
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        
+        // Get form data
+        const form = document.getElementById('appointmentDetailsForm');
+        const formData = new FormData(form);
+        
+        // Add urgent flag
+        formData.append('is_urgent', isUrgent);
+        
+        // Submit form
+        fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                // Form was submitted successfully
+                document.getElementById('loadingOverlay').style.display = 'none';
+                const modal = new bootstrap.Modal(document.getElementById('successModal'));
+                modal.show();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Booking failed');
+                });
+            }
+        })
+        .catch(error => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            showAlert(error.message || 'Something went wrong. Please try again.', 'error');
+        });
+    }
+    
+    // Action functions
+    function checkInsurance() {
+        showAlert('Insurance check feature coming soon!', 'info');
+    }
+    
+    function viewAppointments() {
+        window.location.href = '{% url "patient_appointments" %}';
+    }
+    
+    function bookAnother() {
+        window.location.reload();
+    }
+    
+    // Utility functions
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+    
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

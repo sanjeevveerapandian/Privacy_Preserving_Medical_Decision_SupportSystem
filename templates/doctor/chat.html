@@ -1,0 +1,1425 @@
+<!-- templates/doctor/chat.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}AI Assistant - Doctor Portal{% endblock %}
+{% block page_title %}Medical AI Assistant{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-robot me-2"></i>AI-powered diagnostic support and medical guidance
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Purple Theme Variables */
+    :root {
+        --purple-primary: #7e57c2;
+        --purple-secondary: #9575cd;
+        --purple-light: #d1c4e9;
+        --purple-dark: #5e35b1;
+        --purple-gradient: linear-gradient(135deg, #7e57c2 0%, #5e35b1 100%);
+        --purple-gradient-light: linear-gradient(135deg, #d1c4e9 0%, #b39ddb 100%);
+    }
+    
+    /* Unified Chat Container */
+    .chat-main-container {
+        display: flex;
+        flex-direction: column;
+        height: 700px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #e8eaf6;
+    }
+    
+    /* Chat Header - Purple Theme */
+    .chat-header-doctor {
+        padding: 20px 25px;
+        background: var(--purple-gradient);
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .chat-header-doctor h4 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .chat-header-doctor .doctor-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        margin-left: 15px;
+    }
+    
+    /* Messages Container */
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 25px;
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede7f6 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    /* Message Bubbles */
+    .message-bubble {
+        max-width: 75%;
+        animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .message-bubble.user {
+        align-self: flex-end;
+        margin-left: auto;
+    }
+    
+    .message-bubble.ai {
+        align-self: flex-start;
+        margin-right: auto;
+    }
+    
+    .message-content {
+        padding: 18px 22px;
+        border-radius: 22px;
+        line-height: 1.6;
+        font-size: 15px;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+    }
+    
+    .message-bubble.user .message-content {
+        background: var(--purple-gradient);
+        color: white;
+        border-bottom-right-radius: 8px;
+    }
+    
+    .message-bubble.ai .message-content {
+        background: white;
+        color: #2c3e50;
+        border: 1px solid #e8eaf6;
+        border-bottom-left-radius: 8px;
+        border-left: 4px solid #7e57c2;
+    }
+    
+    /* Medical Specific Styling - Purple Theme */
+    .message-content.medical-advice {
+        border-left: 4px solid #7e57c2;
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede7f6 100%);
+    }
+    
+    .message-content.diagnosis {
+        border-left: 4px solid #ab47bc;
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    }
+    
+    .message-content.treatment {
+        border-left: 4px solid #ba68c8;
+        background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+    }
+    
+    .message-content.medication {
+        border-left: 4px solid #9575cd;
+        background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%);
+    }
+    
+    /* Message Meta */
+    .message-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        font-size: 12px;
+    }
+    
+    .message-bubble.user .message-meta {
+        color: rgba(255, 255, 255, 0.8);
+        padding-left: 10px;
+    }
+    
+    .message-bubble.ai .message-meta {
+        color: #7e57c2;
+        padding-left: 14px;
+    }
+    
+    .message-model {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(126, 87, 194, 0.1);
+        padding: 3px 10px;
+        border-radius: 12px;
+        color: #7e57c2;
+        font-weight: 500;
+    }
+    
+    /* Input Area */
+    .chat-input-area {
+        padding: 20px 25px;
+        background: white;
+        border-top: 1px solid #e8eaf6;
+    }
+    
+    .chat-textarea {
+        border: 1px solid #d1c4e9;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 15px;
+        resize: none;
+        background: #f5f3ff;
+        transition: all 0.3s;
+    }
+    
+    .chat-textarea:focus {
+        border-color: #7e57c2;
+        box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.15);
+        outline: none;
+        background: white;
+    }
+    
+    /* Quick Action Buttons - Purple Theme */
+    .quick-action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .quick-action-btn {
+        background: white;
+        border: 1px solid #d1c4e9;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.3s;
+        color: #5e35b1;
+        font-weight: 500;
+    }
+    
+    .quick-action-btn:hover {
+        background: var(--purple-gradient);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(126, 87, 194, 0.2);
+        border-color: transparent;
+    }
+    
+    .quick-action-btn i {
+        font-size: 20px;
+        margin-bottom: 10px;
+        display: block;
+        color: #7e57c2;
+    }
+    
+    .quick-action-btn:hover i {
+        color: white;
+    }
+    
+    /* Medical Templates */
+    .medical-templates {
+        background: var(--purple-gradient-light);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .template-badge {
+        background: white;
+        border: 1px solid #d1c4e9;
+        border-radius: 20px;
+        padding: 6px 15px;
+        font-size: 13px;
+        color: #7e57c2;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        margin: 5px;
+    }
+    
+    .template-badge:hover {
+        background: #7e57c2;
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    /* Sidebar - Purple Theme */
+    .chat-sidebar {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e8eaf6;
+        overflow: hidden;
+    }
+    
+    .sidebar-section {
+        padding: 20px;
+        border-bottom: 1px solid #e8eaf6;
+    }
+    
+    .sidebar-section:last-child {
+        border-bottom: none;
+    }
+    
+    /* Status Indicators */
+    .status-card {
+        background: var(--purple-gradient-light);
+        border-radius: 12px;
+        padding: 15px;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-online {
+        background: rgba(126, 87, 194, 0.1);
+        color: #7e57c2;
+        border: 1px solid rgba(126, 87, 194, 0.2);
+    }
+    
+    .status-offline {
+        background: rgba(244, 67, 54, 0.1);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.2);
+    }
+    
+    /* Chat History */
+    .history-item {
+        padding: 12px 15px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+        background: #f5f3ff;
+    }
+    
+    .history-item:hover {
+        background: #ede7f6;
+        border-left-color: #7e57c2;
+        transform: translateX(3px);
+    }
+    
+    .history-item.active {
+        background: var(--purple-gradient);
+        color: white;
+        border-left-color: #ff6b6b;
+    }
+    
+    /* Typing Indicator */
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 15px 20px;
+        background: white;
+        border-radius: 22px;
+        border: 1px solid #e8eaf6;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: #7e57c2;
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: typingPulse 1.4s infinite;
+    }
+    
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typingPulse {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+        30% { transform: translateY(-8px); opacity: 1; }
+    }
+    
+    /* Send Button - Purple */
+    .send-btn {
+        background: var(--purple-gradient);
+        border: none;
+        border-radius: 12px;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.3s;
+        margin-left: 10px;
+    }
+    
+    .send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(126, 87, 194, 0.3);
+    }
+    
+    /* Scrollbar - Purple */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f5f3ff;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: var(--purple-gradient);
+        border-radius: 10px;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #5e35b1;
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        color: #d1c4e9;
+    }
+    
+    /* Alert Box - Purple */
+    .medical-alert {
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        border-left: 4px solid #ab47bc;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    
+    .medical-alert .alert-title {
+        color: #8e24aa;
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Purple Button Styles */
+    .btn-purple {
+        background: var(--purple-gradient);
+        color: white;
+        border: none;
+    }
+    
+    .btn-purple:hover {
+        background: #5e35b1;
+        color: white;
+    }
+    
+    .btn-outline-purple {
+        border-color: #7e57c2;
+        color: #7e57c2;
+    }
+    
+    .btn-outline-purple:hover {
+        background: #7e57c2;
+        color: white;
+    }
+    
+    /* Badge Colors */
+    .badge-purple {
+        background: var(--purple-gradient);
+        color: white;
+    }
+    
+    /* Card Header */
+    .card-header-purple {
+        background: var(--purple-gradient);
+        color: white;
+    }
+
+    /* Toast Notifications */
+    .toast-notification {
+        background: white;
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        border-left: 4px solid #7e57c2;
+        opacity: 0;
+        transform: translateX(20px);
+        transition: all 0.3s ease;
+        max-width: 350px;
+    }
+    
+    .toast-notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .toast-success {
+        border-left-color: #4caf50;
+    }
+    
+    .toast-warning {
+        border-left-color: #ff9800;
+    }
+    
+    .toast-error {
+        border-left-color: #f44336;
+    }
+    
+    .toast-content {
+        display: flex;
+        align-items: center;
+    }
+    
+    .toast-content i {
+        font-size: 18px;
+        margin-right: 10px;
+    }
+    
+    .toast-success .toast-content i {
+        color: #4caf50;
+    }
+    
+    .toast-warning .toast-content i {
+        color: #ff9800;
+    }
+    
+    .toast-error .toast-content i {
+        color: #f44336;
+    }
+    
+    /* Patient Context Alert */
+    .alert-purple {
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede7f6 100%);
+        border: 1px solid #d1c4e9;
+        color: #5e35b1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row g-4">
+        <!-- Main Chat Area -->
+        <div class="col-lg-8">
+            <!-- Status Bar -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="status-indicator status-online" id="connectionStatus">
+                                        <i class="fas fa-circle me-2"></i>
+                                        Connected
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="fw-bold">Medical AI Assistant</span>
+                                    <small class="text-purple ms-2" id="currentModelDisplay">{{ selected_model }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-purple" onclick="testConnection()">
+                                    <i class="fas fa-plug me-1"></i>Test Connection
+                                </button>
+                                <button class="btn btn-sm btn-outline-purple" onclick="newChatSession()">
+                                    <i class="fas fa-plus me-1"></i>New Chat
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-purple dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="exportConversation()">
+                                                <i class="fas fa-download me-2"></i>Export Notes
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="saveToEHR()">
+                                                <i class="fas fa-file-medical me-2"></i>Save to EHR
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#" onclick="clearCurrentChat()">
+                                                <i class="fas fa-trash me-2"></i>Clear Chat
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-action-grid mb-4">
+                <button class="quick-action-btn" onclick="quickQuestion('What are the diagnostic criteria for type 2 diabetes?')">
+                    <i class="fas fa-diagnoses"></i>
+                    Diagnostic Help
+                </button>
+                <button class="quick-action-btn" onclick="quickQuestion('First-line treatment options for hypertension')">
+                    <i class="fas fa-pills"></i>
+                    Treatment Plans
+                </button>
+                <button class="quick-action-btn" onclick="quickQuestion('Drug interactions between warfarin and common medications')">
+                    <i class="fas fa-capsules"></i>
+                    Drug Interactions
+                </button>
+                <button class="quick-action-btn" onclick="quickQuestion('Interpretation of abnormal liver function test results')">
+                    <i class="fas fa-microscope"></i>
+                    Lab Analysis
+                </button>
+            </div>
+            
+            <!-- Main Chat Container -->
+            <div class="chat-main-container">
+                <!-- Chat Header -->
+                <div class="chat-header-doctor">
+                    <div>
+                        <h4>
+                            <i class="fas fa-stethoscope me-2"></i>
+                            Medical AI Consultation
+                            <span class="doctor-badge">
+                                <i class="fas fa-user-md me-1"></i>
+                                Dr. {{ request.user.get_full_name|default:request.user.username }}
+                            </span>
+                        </h4>
+                        <small class="opacity-75">
+                            <i class="far fa-clock me-1"></i>
+                            Session started {{ chat_session.created_at|timesince }} ago
+                        </small>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="addToClinicalNotes()">
+                                    <i class="fas fa-notes-medical me-2"></i>
+                                    Add to Clinical Notes
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="shareWithTeam()">
+                                    <i class="fas fa-user-friends me-2"></i>
+                                    Share with Team
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="changeModel()">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                    Change AI Model
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Messages Area -->
+                <div class="messages-container" id="chatMessages">
+                    {% if messages %}
+                        {% for msg in messages %}
+                        <div class="message-bubble {% if msg.message_type == 'user' %}user{% else %}ai{% endif %}">
+                            <div class="message-content {% if msg.message_type == 'ai' %}medical-advice{% endif %}">
+                                {{ msg.content|linebreaks }}
+                                <div class="message-meta">
+                                    <span>
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ msg.created_at|time:"H:i" }}
+                                    </span>
+                                    {% if msg.message_type == 'ai' %}
+                                    <span class="message-model">
+                                        <i class="fas fa-microchip me-1"></i>
+                                        {{ selected_model }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-comment-medical fa-3x"></i>
+                            <h4 class="mt-4 mb-3">Welcome to Medical AI Assistant</h4>
+                            <p class="text-muted mb-4" style="max-width: 600px; margin: 0 auto;">
+                                This AI assistant is designed to support clinical decision-making. 
+                                It can help with differential diagnosis, treatment planning, medication 
+                                queries, and interpretation of medical literature.
+                            </p>
+                            
+                            <!-- Medical Disclaimer -->
+                            <div class="medical-alert">
+                                <div class="alert-title">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Important Disclaimer
+                                </div>
+                                <p class="small mb-0">
+                                    This AI provides suggestions for informational purposes only. 
+                                    Always verify information and make final clinical decisions based 
+                                    on professional judgment and current guidelines.
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Typing Indicator -->
+                    <div id="typingIndicator" style="display: none;">
+                        <div class="message-bubble ai">
+                            <div class="typing-indicator">
+                                <span class="typing-dot"></span>
+                                <span class="typing-dot"></span>
+                                <span class="typing-dot"></span>
+                                <span class="ms-3 text-purple fw-500">AI is analyzing your query...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="chat-input-area">
+                    <!-- Medical Templates -->
+                    <div class="medical-templates">
+                        <div class="mb-2">
+                            <small class="text-purple fw-500">
+                                <i class="fas fa-magic me-1"></i>
+                                Quick Templates:
+                            </small>
+                        </div>
+                        <div>
+                            <span class="template-badge" onclick="insertTemplate('differential', '57M with chest pain and SOB, no cardiac history')">
+                                <i class="fas fa-heart-pulse me-1"></i>
+                                Differential Diagnosis
+                            </span>
+                            <span class="template-badge" onclick="insertTemplate('treatment', 'First-line treatment for uncomplicated UTI in 35F')">
+                                <i class="fas fa-pills me-1"></i>
+                                Treatment Plan
+                            </span>
+                            <span class="template-badge" onclick="insertTemplate('medication', 'Dosing and monitoring for warfarin initiation')">
+                                <i class="fas fa-prescription me-1"></i>
+                                Medication Query
+                            </span>
+                            <span class="template-badge" onclick="insertTemplate('lab', 'Interpret elevated AST/ALT with normal bilirubin')">
+                                <i class="fas fa-vial me-1"></i>
+                                Lab Interpretation
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Input Form -->
+                    <form id="chatForm" onsubmit="sendMessage(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="session_id" value="{{ chat_session.id }}">
+                        
+                        <div class="d-flex align-items-end">
+                            <div class="flex-grow-1 me-3">
+                                <textarea class="form-control chat-textarea" 
+                                          id="messageInput" 
+                                          rows="3"
+                                          placeholder="Describe the clinical scenario, ask about medications, or request differential diagnosis... (Shift+Enter for new line)"
+                                          onkeydown="handleKeyDown(event)"
+                                          oninput="updateCharCount()"></textarea>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="professionalMode" checked>
+                                        <label class="form-check-label small text-purple" for="professionalMode">
+                                            <i class="fas fa-user-md me-1"></i>
+                                            Professional mode (detailed responses)
+                                        </label>
+                                    </div>
+                                    <small class="text-purple">
+                                        <span id="charCount">0</span>/4000 characters
+                                    </small>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn send-btn" id="sendButton">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Patient Context - Optional -->
+                        {% if patient_list %}
+                        <div class="mt-3">
+                            <div class="d-flex align-items-center">
+                                <label class="me-2 small text-purple">
+                                    <i class="fas fa-user-injured me-1"></i>
+                                    Select Patient:
+                                </label>
+                                <select class="form-select form-select-sm w-auto" id="patientSelect">
+                                    <option value="">No patient selected</option>
+                                    {% for patient in patient_list %}
+                                    <option value="{{ patient.id }}" 
+                                            {% if selected_patient and selected_patient.id == patient.id %}selected{% endif %}>
+                                        {{ patient.get_full_name|default:patient.username }} 
+                                        {% if patient.age %}({{ patient.age }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if selected_patient %}
+                                <button type="button" class="btn btn-sm btn-outline-purple ms-2" onclick="clearPatientContext()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar -->
+        <div class="col-lg-4">
+            <!-- Model Configuration -->
+            <div class="chat-sidebar mb-4">
+                <div class="sidebar-section">
+                    <h6 class="fw-bold mb-3 text-purple">
+                        <i class="fas fa-cogs me-2"></i>
+                        AI Configuration
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label small fw-500 text-purple">Select AI Model:</label>
+                        <select class="form-select" id="modelSelect">
+                            {% for model in available_models %}
+                            <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                                {{ model }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="status-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-500 text-purple">Connection Status</span>
+                            <span id="connectionBadge" class="status-indicator status-online">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Online
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-500 text-purple">Current Model</span>
+                            <span class="badge badge-purple">{{ selected_model }}</span>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-purple w-100" onclick="refreshModels()">
+                                <i class="fas fa-sync-alt me-1"></i>
+                                Refresh Models
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat History -->
+                <div class="sidebar-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-purple">
+                            <i class="fas fa-history me-2"></i>
+                            Recent Chats
+                        </h6>
+                        <span class="badge badge-purple">{{ chat_history.count }}</span>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for session in chat_history %}
+                        <div class="history-item {% if session.id == chat_session.id %}active{% endif %}"
+                             onclick="loadChatSession('{{ session.id }}')">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">{{ session.title|truncatechars:25 }}</h6>
+                                    <p class="mb-0 small">
+                                        <i class="fas fa-message me-1"></i>
+                                        {{ session.messages.count }} messages
+                                    </p>
+                                </div>
+                                <small class="text-purple">{{ session.updated_at|date:"M d" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-purple">
+                            <i class="fas fa-comments fa-2x mb-3"></i>
+                            <p class="small mb-0">No previous consultations</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clinical Guidelines -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header card-header-purple">
+                    <h6 class="fw-bold mb-0 text-white">
+                        <i class="fas fa-book-medical me-2"></i>
+                        Quick Reference
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2" 
+                           onclick="quickQuestion('ACE inhibitor dosing guidelines')">
+                            <i class="fas fa-capsules text-purple me-2"></i>
+                            Medication Dosing
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="quickQuestion('Latest hypertension guidelines JNC 8 vs ACC/AHA')">
+                            <i class="fas fa-guidelines text-purple me-2"></i>
+                            Clinical Guidelines
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="quickQuestion('Common antibiotic resistance patterns 2024')">
+                            <i class="fas fa-bacteria text-purple me-2"></i>
+                            Antibiotic Stewardship
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="quickQuestion('Emergency management of anaphylaxis protocol')">
+                            <i class="fas fa-first-aid text-purple me-2"></i>
+                            Emergency Protocols
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Global Variables
+let currentSessionId = '{{ chat_session.id }}';
+let currentModel = '{{ selected_model }}';
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToBottom();
+    setupTextarea();
+    setupEventListeners();
+    updateCharCount();
+    
+    // Auto-check connection
+    checkConnection();
+});
+
+// Setup textarea
+function setupTextarea() {
+    const textarea = document.getElementById('messageInput');
+    if (textarea) {
+        textarea.focus();
+        
+        textarea.addEventListener('input', function() {
+            // Auto-resize
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+    }}
+
+// Setup event listeners - FIXED VERSION
+function setupEventListeners() {
+    // Model selection
+    const modelSelect = document.getElementById('modelSelect');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', function() {
+            changeModelRequest(this.value);
+        });
+    }
+    
+    // Patient selection - ONLY IF ELEMENT EXISTS
+    const patientSelect = document.getElementById('patientSelect');
+    if (patientSelect) {
+        patientSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadPatientContext(this.value);
+            }
+        });
+    }}
+
+// Send message - FIXED VERSION
+function sendMessage(event) {
+    event.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    if (!messageInput) {
+        showToast('Message input not found', 'error');
+        return;
+    }
+    
+    const message = messageInput.value.trim();
+    const sendButton = document.getElementById('sendButton');
+    const typingIndicator = document.getElementById('typingIndicator');
+    
+    if (!message) {
+        showToast('Please enter your medical query', 'warning');
+        return;
+    }
+    
+    if (!currentModel) {
+        showToast('Please select an AI model', 'warning');
+        return;
+    }
+    
+    // Disable input
+    messageInput.disabled = true;
+    if (sendButton) {
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    }
+    
+    // Add user message
+    addMessage(message, 'user');
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    updateCharCount();
+    
+    // Show typing indicator if it exists
+    if (typingIndicator) {
+        typingIndicator.style.display = 'block';
+    }
+    scrollToBottom();
+    
+    // Prepare request
+    const requestData = {
+        message: message,
+        session_id: currentSessionId,
+        model: currentModel
+    };
+    
+    // Add professional mode if exists
+    const professionalMode = document.getElementById('professionalMode');
+    if (professionalMode) {
+        requestData.professional_mode = professionalMode.checked;
+    }
+    
+    // Add patient context if available - SAFELY
+    const patientSelect = document.getElementById('patientSelect');
+    if (patientSelect && patientSelect.value) {
+        requestData.patient_id = patientSelect.value;
+    }
+    
+    // Send request
+    fetch('{% url "doctor_chat_send" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide typing indicator if it exists
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+        
+        if (data.success) {
+            // Add AI response
+            addMessage(data.ai_response, 'ai', data.model);
+            
+            // Update model if changed
+            if (data.model && data.model !== currentModel) {
+                currentModel = data.model;
+                updateModelDisplay(data.model);
+                const modelSelect = document.getElementById('modelSelect');
+                if (modelSelect) {
+                    modelSelect.value = data.model;
+                }
+            }
+            
+            // Update empty state
+            if (document.querySelector('.empty-state')) {
+                location.reload();
+            }
+        } else {
+            addMessage(`<div class="alert alert-danger p-2 mb-0">Error: ${data.error}</div>`, 'ai');
+        }
+    })
+    .catch(error => {
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+        addMessage('<div class="alert alert-danger p-2 mb-0">Network error. Please try again.</div>', 'ai');
+    })
+    .finally(() => {
+        // Re-enable input
+        messageInput.disabled = false;
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        }
+        messageInput.focus();
+        scrollToBottom();
+    });
+}
+
+// Add message to chat - FIXED VERSION
+function addMessage(content, type, model = null) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const typingIndicator = document.getElementById('typingIndicator');
+    
+    // Remove empty state if present
+    if (document.querySelector('.empty-state')) {
+        chatMessages.innerHTML = '';
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message-bubble ${type}`;
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const modelHtml = model ? 
+        `<span class="message-model"><i class="fas fa-microchip me-1"></i>${model}</span>` : '';
+    
+    // Add medical styling based on content
+    let messageClass = 'message-content';
+    if (type === 'ai') {
+        if (content.toLowerCase().includes('diagnosis') || content.toLowerCase().includes('differential')) {
+            messageClass += ' diagnosis';
+        } else if (content.toLowerCase().includes('treatment') || content.toLowerCase().includes('therapy')) {
+            messageClass += ' treatment';
+        } else if (content.toLowerCase().includes('medication') || content.toLowerCase().includes('drug')) {
+            messageClass += ' medication';
+        } else {
+            messageClass += ' medical-advice';
+        }
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="${messageClass}">
+            ${content.replace(/\n/g, '<br>')}
+            <div class="message-meta">
+                <span><i class="far fa-clock me-1"></i>${timeString}</span>
+                ${type === 'ai' ? modelHtml : ''}
+            </div>
+        </div>
+    `;
+    
+    // SAFELY insert before typing indicator
+    if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+        chatMessages.insertBefore(messageDiv, typingIndicator);
+    } else {
+        // If typing indicator not found, append to end
+        chatMessages.appendChild(messageDiv);
+    }
+    
+    scrollToBottom();
+}
+
+// Change model request
+function changeModelRequest(modelName) {
+    fetch('{% url "doctor_change_model" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ model: modelName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentModel = modelName;
+            updateModelDisplay(modelName);
+            showToast('Model changed to ' + modelName, 'success');
+        } else {
+            showToast('Error: ' + data.error, 'error');
+        }
+    });
+}
+
+// Quick question
+function quickQuestion(question) {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.value = question;
+        messageInput.dispatchEvent(new Event('input'));
+        messageInput.focus();
+    }}
+
+// Insert template
+function insertTemplate(type, example) {
+    const templates = {
+        'differential': 'Provide differential diagnosis for: ' + example,
+        'treatment': 'Suggest treatment options for: ' + example,
+        'medication': 'Advise on medication management for: ' + example,
+        'lab': 'Interpret these lab findings: ' + example
+    };
+    
+    if (templates[type]) {
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.value = templates[type];
+            messageInput.dispatchEvent(new Event('input'));
+            messageInput.focus();
+        }
+    }}
+
+// Test connection
+function testConnection() {
+    const statusBadge = document.getElementById('connectionBadge');
+    if (!statusBadge) return;
+    
+    statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+    statusBadge.className = 'status-indicator';
+    
+    fetch('{% url "doctor_test_ollama" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusBadge.className = 'status-indicator status-online';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Connected';
+            showToast('Connection successful!', 'success');
+            
+            // Update models if available
+            if (data.models && data.current_model) {
+                updateModelDropdown(data.models, data.current_model);
+            }
+        } else {
+            statusBadge.className = 'status-indicator status-offline';
+            statusBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> Disconnected';
+            showToast('Connection failed: ' + data.error, 'error');
+        }
+    });
+}
+
+// Check connection
+function checkConnection() {
+    fetch('{% url "doctor_test_ollama" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusBadge = document.getElementById('connectionBadge');
+        if (!statusBadge) return;
+        
+        if (data.success) {
+            statusBadge.className = 'status-indicator status-online';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Online';
+        } else {
+            statusBadge.className = 'status-indicator status-offline';
+            statusBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> Offline';
+        }
+    });
+}
+
+// Update model dropdown
+function updateModelDropdown(models, currentModel) {
+    const select = document.getElementById('modelSelect');
+    if (!select) return;
+    
+    select.innerHTML = '';
+    
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        if (model === currentModel) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+// Update model display
+function updateModelDisplay(modelName) {
+    const displayElement = document.getElementById('currentModelDisplay');
+    if (displayElement) {
+        displayElement.textContent = modelName;
+    }}
+
+// Load chat session
+function loadChatSession(sessionId) {
+    window.location.href = `{% url 'doctor_chat' %}?session=${sessionId}`;
+}
+
+// New chat session
+function newChatSession() {
+    if (confirm('Start a new consultation?')) {
+        fetch('{% url "doctor_new_chat_session" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            }
+        });
+    }}
+
+// Load patient context
+function loadPatientContext(patientId) {
+    window.location.href = `{% url 'doctor_chat' %}?patient=${patientId}`;
+}
+
+// Clear patient context
+function clearPatientContext() {
+    const patientSelect = document.getElementById('patientSelect');
+    if (patientSelect) {
+        patientSelect.value = '';
+    }
+    window.location.href = '{% url "doctor_chat" %}';
+}
+
+// Toggle patient context
+function togglePatientContext() {
+    const checkbox = document.getElementById('professionalMode');
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+    }}
+
+// Change model
+function changeModel() {
+    const modelSelect = document.getElementById('modelSelect');
+    if (modelSelect) {
+        modelSelect.focus();
+    }}
+
+// Refresh models
+function refreshModels() {
+    testConnection();
+}
+
+// Export conversation
+function exportConversation() {
+    showToast('Exporting consultation notes...', 'info');
+    // Implementation for export functionality
+}
+
+// Save to EHR
+function saveToEHR() {
+    showToast('Saving to Electronic Health Record...', 'info');
+    // Implementation for EHR integration
+}
+
+// Add to clinical notes
+function addToClinicalNotes() {
+    showToast('Added to clinical notes', 'success');
+}
+
+// Share with team
+function shareWithTeam() {
+    showToast('Shared with medical team', 'success');
+}
+
+// Clear current chat
+function clearCurrentChat() {
+    if (confirm('Clear all messages in this consultation?')) {
+        location.reload();
+    }}
+
+// Handle key down
+function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage(event);
+    }}
+
+// Update character count
+function updateCharCount() {
+    const textarea = document.getElementById('messageInput');
+    const charCount = document.getElementById('charCount');
+    if (!textarea || !charCount) return;
+    
+    charCount.textContent = textarea.value.length;
+    
+    if (textarea.value.length > 4000) {
+        charCount.style.color = '#e74c3c';
+    } else {
+        charCount.style.color = '#7e57c2';
+    }}
+
+// Scroll to bottom
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    // Check if toast container exists
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Force reflow
+    toast.offsetHeight;
+    
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toast.parentNode === toastContainer) {
+                toastContainer.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

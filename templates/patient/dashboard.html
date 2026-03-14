@@ -1,0 +1,454 @@
+{% extends 'patient_base.html' %}
+
+{% block title %}Patient Dashboard - Medical System{% endblock %}
+
+{% block page_title %}Health Dashboard{% endblock %}
+{% block page_subtitle %}Your health overview and quick actions{% endblock %}
+
+{% block content %}
+<!-- Health Insights Section (New) -->
+{% if health_insights %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-sparkles text-primary me-2"></i>Personalized Health Insights</h5>
+        </div>
+        <div class="row g-3">
+            {% for insight in health_insights %}
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm overflow-hidden" style="border-radius: 15px;">
+                    <div class="card-body p-0 d-flex">
+                        <div class="p-3 d-flex align-items-center justify-content-center 
+                            {% if insight.type == 'warning' %}bg-danger{% elif insight.type == 'tip' %}bg-warning{% elif insight.type == 'new' %}bg-primary{% else %}bg-success{% endif %} bg-opacity-10"
+                            style="width: 70px;">
+                            <i
+                                class="fas {{ insight.icon }} fa-2x 
+                                {% if insight.type == 'warning' %}text-danger{% elif insight.type == 'tip' %}text-warning{% elif insight.type == 'new' %}text-primary{% else %}text-success{% endif %}"></i>
+                        </div>
+                        <div class="p-3 flex-grow-1">
+                            <h6 class="fw-bold mb-1">{{ insight.title }}</h6>
+                            <p class="small text-muted mb-0">{{ insight.content }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Health Summary Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body stat-card">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="card-icon primary">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ total_records|default:"0" }}</div>
+                <div class="stat-label">Medical Records</div>
+                <a href="{% url 'patient_medical_history' %}" class="btn btn-sm btn-outline-primary mt-3">View All</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body stat-card">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="card-icon secondary">
+                        <i class="fas fa-comment-medical"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ chat_sessions.count|default:"0" }}</div>
+                <div class="stat-label">Chat Sessions</div>
+                <a href="{% url 'patient_chat' %}" class="btn btn-sm btn-outline-primary mt-3">Chat Now</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body stat-card">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div
+                        class="card-icon {% if user.risk_level == 'high' or user.risk_level == 'critical' %}danger{% elif user.risk_level == 'medium' %}warning{% else %}success{% endif %}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ user.risk_level|default:"Not Set"|title }}</div>
+                <div class="stat-label">Risk Level</div>
+                <a href="{% url 'patient_symptom_check' %}" class="btn btn-sm btn-outline-primary mt-3">Re-check</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body stat-card">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="card-icon success">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                </div>
+
+                <div class="stat-label">Upcoming Appointments</div>
+                <a href="{% url 'patient_appointments' %}" class="btn btn-sm btn-outline-primary mt-3">Schedule</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Health Status Overview -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Health Status Overview
+                </h5>
+                <span
+                    class="badge {% if user.risk_level == 'high' or user.risk_level == 'critical' %}badge-danger{% elif user.risk_level == 'medium' %}badge-warning{% else %}badge-success{% endif %}">
+                    {{ user.risk_level|default:"Not Assessed"|title }}
+                </span>
+            </div>
+            <div class="card-body">
+                {% if user.last_analysis %}
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-3 fa-lg"></i>
+                        <div>
+                            <strong>Last Analysis:</strong> {{ user.last_analysis|date:"F d, Y H:i" }}
+                            {% if user.ml_confidence_score %}
+                            • <strong>Confidence:</strong> {{ user.ml_confidence_score|floatformat:1 }}%
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="chart-container">
+                    <canvas id="healthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'patient_symptom_check' %}" class="btn btn-primary">
+                        <i class="fas fa-stethoscope me-2"></i>Check Symptoms
+                    </a>
+                    <a href="{% url 'patient_chat' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-robot me-2"></i>Ask Health Assistant
+                    </a>
+                    <a href="{% url 'patient_doctors' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-md me-2"></i>Find a Doctor
+                    </a>
+                    <a href="{% url 'patient_appointments' %}" class="btn btn-outline-success">
+                        <i class="fas fa-calendar-plus me-2"></i>Schedule Appointment
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="row">
+    <!-- Today's Appointments -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>Today's Appointments
+                </h5>
+                <a href="{% url 'patient_appointments' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if today_appointments %}
+                <div class="list-group list-group-flush">
+                    {% for appointment in today_appointments %}
+                    <div class="list-group-item border-0 px-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Dr. {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}</h6>
+                                <p class="text-muted mb-0 small">
+                                    <i class="fas fa-clock me-1"></i>{{ appointment.appointment_time|time:"h:i A" }}
+                                    <i class="fas fa-calendar ms-3 me-1"></i>{{ appointment.appointment_date|date:"M d, Y" }}
+                                </p>
+                                <span
+                                    class="badge {% if appointment.status == 'confirmed' %}badge-success{% elif appointment.status == 'pending' %}badge-warning{% else %}badge-secondary{% endif %}">
+                                    {{ appointment.status|title }}
+                                </span>
+                            </div>
+                            <a href="{% url 'patient_appointment_detail' appointment.appointment_id %}"
+                                class="btn btn-sm btn-outline-primary">
+                                Details
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-3">No appointments today</p>
+                    <a href="{% url 'patient_doctors' %}" class="btn btn-primary">Find Doctor</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Medical Records -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Medical Records
+                </h5>
+                <a href="{% url 'patient_medical_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if medical_records %}
+                <div class="list-group list-group-flush">
+                    {% for record in medical_records|slice:":5" %}
+                    <div class="list-group-item border-0 px-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ record.created_at|date:"F d, Y" }}</h6>
+                                <p class="text-muted mb-0 small">
+                                    {% with symptoms=record.get_symptoms_list %}
+                                    {{ symptoms|join:", "|truncatechars:50 }}
+                                    {% endwith %}
+                                </p>
+                                <span
+                                    class="badge {% if record.risk_level == 'low' %}badge-success{% elif record.risk_level == 'medium' %}badge-warning{% else %}badge-danger{% endif %}">
+                                    {{ record.get_diagnosis_summary|title }}
+                                </span>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block">{{ record.created_at|date:"h:i A" }}</small>
+                                <span
+                                    class="badge {% if record.confidence_score > 0.8 %}badge-success{% elif record.confidence_score > 0.6 %}badge-warning{% else %}badge-danger{% endif %}">
+                                    {{ record.confidence_score|floatformat:1 }}% conf
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-medical fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-3">No medical records yet</p>
+                    <a href="{% url 'patient_symptom_check' %}" class="btn btn-primary">Start Checkup</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Health Tips -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Daily Health Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="health-tips">
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-glass-water text-primary fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="fw-bold">Stay Hydrated</h6>
+                            <p class="small mb-0">Drink at least 8 glasses of water daily for optimal health.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-walking text-success fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="fw-bold">Daily Exercise</h6>
+                            <p class="small mb-0">Aim for 30 minutes of moderate exercise every day.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-bed text-info fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="fw-bold">Quality Sleep</h6>
+                            <p class="small mb-0">Get 7-9 hours of sleep each night for better health.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-apple-alt text-warning fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="fw-bold">Balanced Diet</h6>
+                            <p class="small mb-0">Eat a variety of fruits and vegetables daily.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Chat Sessions -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-comments me-2"></i>Recent Health Chats
+                </h5>
+                <a href="{% url 'patient_chat' %}" class="btn btn-sm btn-outline-primary">New Chat</a>
+            </div>
+            <div class="card-body">
+                {% if chat_sessions %}
+                <div class="list-group list-group-flush">
+                    {% for session in chat_sessions|slice:":5" %}
+                    <div class="list-group-item border-0 px-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ session.title|truncatechars:30 }}</h6>
+                                <p class="text-muted mb-0 small">
+                                    {{ session.messages.count }} messages •
+                                    Last: {{ session.updated_at|timesince }} ago
+                                </p>
+                            </div>
+                            <a href="{% url 'patient_chat' %}?session={{ session.id }}" class="btn btn-sm btn-primary">
+                                Continue
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comment-medical fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-3">No chat sessions yet</p>
+                    <a href="{% url 'patient_chat' %}" class="btn btn-primary">Start Chatting</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Health Chart
+    const healthCtx = document.getElementById('healthChart').getContext('2d');
+    const healthChart = new Chart(healthCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+            datasets: [{
+                label: 'Health Score',
+                data: [85, 82, 88, 90, 87, 85, 92],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#3498db',
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(44, 62, 80, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#3498db',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function (context) {
+                            return `Health Score: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 70,
+                    max: 100,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        color: '#666'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Health Score',
+                        color: '#666'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        color: '#666'
+                    }
+                }
+            }
+        }
+    });
+
+    // Quick action functions
+    function requestPrescription() {
+        alert('Opening prescription request form...');
+        // In production, show prescription request modal
+    }
+
+    function downloadMedicalRecords() {
+        if (confirm('Download your medical records? This may take a moment.')) {
+            alert('Preparing download...');
+            // In production, generate and download PDF
+        }
+    }
+
+    function callPoisonControl() {
+        if (confirm('Call Poison Control at 1-800-222-1222?')) {
+            window.location.href = 'tel:1-800-222-1222';
+        }
+    }
+
+    function callHospital() {
+        alert('Finding nearest hospital...');
+        // In production, use geolocation to find nearest hospital
+    }
+</script>
+{% endblock %}
+{% endblock %}

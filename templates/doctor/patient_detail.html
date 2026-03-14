@@ -1,0 +1,334 @@
+<!-- templates/doctor/patient_detail.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}{{ patient.get_full_name|default:patient.username }} - Patient Details{% endblock %}
+{% block page_title %}Patient Details{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-user-injured me-1"></i>{{ patient.get_full_name|default:patient.username }}
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <!-- Patient Info -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">Patient Information</div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="user-avatar mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                            {{ patient.username|first|upper }}
+                        </div>
+                        <h4>{{ patient.get_full_name|default:patient.username }}</h4>
+                        <div class="text-muted">{{ patient.email }}</div>
+                        {% if patient.phone %}
+                        <div class="text-muted">{{ patient.phone }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="patient-info">
+                        <div class="info-item mb-3">
+                            <strong>Patient ID:</strong>
+                            <span class="float-end">{{ patient.id }}</span>
+                        </div>
+                        <div class="info-item mb-3">
+                            <strong>Date Joined:</strong>
+                            <span class="float-end">{{ patient.date_joined|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="info-item mb-3">
+                            <strong>Last Analysis:</strong>
+                            <span class="float-end">
+                                {% if patient.last_analysis %}
+                                {{ patient.last_analysis|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item mb-3">
+                            <strong>Risk Level:</strong>
+                            <span class="float-end">
+                                <span class="badge badge-{{ patient.risk_level|default:'low' }}">
+                                    {{ patient.get_risk_level_display|default:"Not assessed" }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-item mb-3">
+                            <strong>Confidence Score:</strong>
+                            <span class="float-end">
+                                {% if patient.ml_confidence_score %}
+                                {{ patient.ml_confidence_score|floatformat:1 }}%
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'doctor_patient_analysis' patient.id %}" class="btn btn-doctor">
+                                <i class="fas fa-stethoscope me-2"></i>Analyze Symptoms
+                            </a>
+                            <a href="{% url 'doctor_chat' %}?patient={{ patient.id }}" class="btn btn-primary">
+                                <i class="fas fa-comment-medical me-2"></i>Chat with AI
+                            </a>
+                            <a href="{% url 'doctor_appointments' %}?search={{ patient.username }}"
+                                class="btn btn-success">
+                                <i class="fas fa-calendar me-2"></i>View Appointments
+                            </a>
+                            <a href="{% url 'issue_certificate' patient.id %}" class="btn btn-info text-white">
+                                <i class="fas fa-certificate me-2"></i>Issue Medical Certificate
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header">Patient Statistics</div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-primary">{{ total_records }}</div>
+                            <div class="stat-label small">Medical Records</div>
+                        </div>
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-warning">{{ high_risk_records }}</div>
+                            <div class="stat-label small">High Risk</div>
+                        </div>
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-info">
+                                {% with patient.appointments.count as appointment_count %}
+                                {{ appointment_count }}
+                                {% endwith %}
+                            </div>
+                            <div class="stat-label small">Appointments</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Records -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Medical Records</span>
+                    <button class="btn btn-doctor btn-sm" data-bs-toggle="modal" data-bs-target="#addRecordModal">
+                        <i class="fas fa-plus me-1"></i>Add Record
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if medical_records %}
+                    <div class="timeline">
+                        {% for record in medical_records %}
+                        <div class="timeline-item mb-4">
+                            <div class="timeline-marker">
+                                <i class="fas fa-file-medical"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>Record #{{ forloop.revcounter }}</strong>
+                                                <small class="text-muted ms-2">{{ record.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <div>
+                                                <span class="badge badge-{{ record.risk_level }}">
+                                                    {{ record.get_risk_level_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Symptoms:</h6>
+                                                <p>{{ record.encrypted_symptoms|default:"No symptoms recorded" }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Diagnosis:</h6>
+                                                <p>{{ record.encrypted_diagnosis|default:"No diagnosis recorded" }}</p>
+                                            </div>
+                                        </div>
+                                        {% if record.encrypted_treatment %}
+                                        <div class="mt-3">
+                                            <h6>Treatment:</h6>
+                                            <p>{{ record.encrypted_treatment }}</p>
+                                        </div>
+                                        {% endif %}
+                                        {% if record.encrypted_data %}
+                                        <div class="mt-3">
+                                            <h6>Notes:</h6>
+                                            <p>{{ record.encrypted_data }}</p>
+                                        </div>
+                                        {% endif %}
+                                        <div class="mt-3">
+                                            <small class="text-muted">
+                                                Recorded by: {{ record.created_by.get_full_name }}
+                                                • Confidence: {{ record.confidence_score|floatformat:1 }}%
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-medical fa-3x text-muted mb-3"></i>
+                        <h5>No Medical Records</h5>
+                        <p class="text-muted">No medical records found for this patient.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Record Modal -->
+<div class="modal fade" id="addRecordModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Medical Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addRecordForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">Symptoms *</label>
+                        <textarea class="form-control" name="symptoms" rows="3" required
+                            placeholder="Describe the patient's symptoms..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Diagnosis</label>
+                        <textarea class="form-control" name="diagnosis" rows="2"
+                            placeholder="Enter diagnosis..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Treatment</label>
+                        <textarea class="form-control" name="treatment" rows="2"
+                            placeholder="Enter treatment plan..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="2"
+                            placeholder="Additional notes..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Risk Level</label>
+                            <select class="form-select" name="risk_level">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Confidence Score</label>
+                            <input type="number" class="form-control" name="confidence_score" min="0" max="100"
+                                step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-doctor">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        top: 15px;
+        width: 20px;
+        height: 20px;
+        background: var(--doctor-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    .timeline-content {
+        margin-left: 20px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .stat-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('addRecordForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        fetch('{% url "doctor_add_medical_record" patient.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('Medical record added successfully', 'success');
+                    document.getElementById('addRecordModal').querySelector('.btn-close').click();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(result.error, 'error');
+                }
+            });
+    });
+</script>
+{% endblock %}
+{% endblock %}

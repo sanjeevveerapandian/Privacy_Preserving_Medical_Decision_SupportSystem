@@ -1,0 +1,517 @@
+<!-- core/templates/core/emr_analytics.html -->
+{% extends 'doctor/doctor_base.html' %}
+{% load static %}
+
+{% block title %}Medical System - EMR Analytics{% endblock %}
+{% block page_title %}EMR Analytics Dashboard{% endblock %}
+{% block page_subtitle %}
+    <i class="fas fa-chart-bar me-1"></i>Comprehensive analytics and insights
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card fade-in">
+                <div class="stat-icon patients">
+                    <i class="fas fa-file-medical"></i>
+                </div>
+                <div class="stat-value">{{ total_docs }}</div>
+                <div class="stat-label">Total Documents</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card fade-in">
+                <div class="stat-icon analysis">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="stat-value">{{ processed_docs }}</div>
+                <div class="stat-label">Processed</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card fade-in">
+                <div class="stat-icon high-risk">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-value">{{ pending_docs }}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card fade-in">
+                <div class="stat-icon chats">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value">{{ recent_predictions|length }}</div>
+                <div class="stat-label">Predictions</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <!-- Document Type Distribution -->
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Document Type Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="docTypeChart" height="250"></canvas>
+                    {% if doc_types %}
+                    <div class="mt-3">
+                        <table class="table table-sm">
+                            {% for type in doc_types %}
+                            <tr>
+                                <td>{{ type.document_type|title }}</td>
+                                <td width="70%">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {% widthratio type.count total_docs 100 %}%">
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end">{{ type.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-pie fa-3x text-gray-300"></i>
+                        <p class="text-muted mt-3">No document data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Level Distribution -->
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Risk Level Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="riskChart" height="250"></canvas>
+                    {% if risk_levels %}
+                    <div class="row mt-3">
+                        {% for risk in risk_levels %}
+                        <div class="col-md-3 text-center mb-2">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold">{{ risk.count }}</div>
+                                <span class="badge {% if risk.risk_level == 'Critical' %}badge-critical
+                                                  {% elif risk.risk_level == 'High' %}badge-high
+                                                  {% elif risk.risk_level == 'Medium' %}badge-medium
+                                                  {% else %}badge-low{% endif %}">
+                                    {{ risk.risk_level }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x text-gray-300"></i>
+                        <p class="text-muted mt-3">No risk assessment data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Confidence by Risk Level -->
+    {% if avg_confidence_by_risk %}
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Average Confidence by Risk Level
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for risk_data in avg_confidence_by_risk %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-{% if risk_data.risk_level == 'Critical' %}danger
+                                                   {% elif risk_data.risk_level == 'High' %}warning
+                                                   {% elif risk_data.risk_level == 'Medium' %}info
+                                                   {% else %}success{% endif %}">
+                                <div class="card-body text-center">
+                                    <h2 class="fw-bold">{{ risk_data.avg_confidence }}%</h2>
+                                    <div class="mb-3">
+                                        <span class="badge {% if risk_data.risk_level == 'Critical' %}badge-critical
+                                                          {% elif risk_data.risk_level == 'High' %}badge-high
+                                                          {% elif risk_data.risk_level == 'Medium' %}badge-medium
+                                                          {% else %}badge-low{% endif %}">
+                                            {{ risk_data.risk_level }}
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar 
+                                            {% if risk_data.risk_level == 'Critical' %}bg-danger
+                                            {% elif risk_data.risk_level == 'High' %}bg-warning
+                                            {% elif risk_data.risk_level == 'Medium' %}bg-info
+                                            {% else %}bg-success{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ risk_data.avg_confidence }}%">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        Based on {{ risk_data.count }} predictions
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Predictions -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>Recent Predictions
+                    </h6>
+                    <a href="{% url 'emr_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i>View All Documents
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_predictions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Prediction</th>
+                                    <th>Confidence</th>
+                                    <th>Risk Level</th>
+                                    <th>Document</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pred_data in recent_predictions %}
+                                <tr>
+                                    <td>
+                                        <small>{{ pred_data.prediction.created_at|date:"M d, Y" }}</small>
+                                        <br>
+                                        <small class="text-muted">{{ pred_data.prediction.created_at|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-user-injured me-1 text-primary"></i>
+                                        {{ pred_data.prediction.patient.full_name|truncatechars:20 }}
+                                    </td>
+                                    <td>
+                                        <strong>{{ pred_data.prediction.predicted_conditions|join:", "|truncatechars:25 }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if pred_data.confidence %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar 
+                                                    {% if pred_data.confidence >= 80 %}bg-success
+                                                    {% elif pred_data.confidence >= 60 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ pred_data.confidence }}%">
+                                                </div>
+                                            </div>
+                                            <small class="fw-bold">{{ pred_data.confidence_display }}</small>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if pred_data.prediction.risk_level == 'Critical' %}badge-critical
+                                                          {% elif pred_data.prediction.risk_level == 'High' %}badge-high
+                                                          {% elif pred_data.prediction.risk_level == 'Medium' %}badge-medium
+                                                          {% else %}badge-low{% endif %}">
+                                            {{ pred_data.prediction.risk_level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-file-medical me-1"></i>
+                                        {{ pred_data.prediction.document.get_document_type_display }}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'view_emr_document' pred_data.prediction.document.document_id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-stethoscope fa-3x text-gray-300"></i>
+                        <h6 class="text-muted mt-3">No predictions available</h6>
+                        <p class="text-muted">Generate predictions from medical documents to see analytics</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Processing Performance
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h2 class="fw-bold text-success">{{ processed_docs }}</h2>
+                                <small class="text-muted">Successfully Processed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h2 class="fw-bold text-warning">{{ pending_docs }}</h2>
+                                <small class="text-muted">Pending Processing</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h2 class="fw-bold text-danger">
+                                    {{ total_docs|add:"0"|add:"0"|add:"-processed_docs|add:0"|add:"-pending_docs|add:0" }}
+                                </h2>
+                                <small class="text-muted">Processing Errors</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h2 class="fw-bold text-primary">{{ total_docs }}</h2>
+                                <small class="text-muted">Total Documents</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Monthly Trends
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyTrendsChart" height="200"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Showing document upload trends over time
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-download me-2"></i>Export Analytics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-primary w-100">
+                                <i class="fas fa-file-pdf me-2"></i>PDF Report
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-success w-100">
+                                <i class="fas fa-file-excel me-2"></i>Excel Data
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Charts Only
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-secondary w-100 disabled" disabled>
+                                <i class="fas fa-cogs me-2"></i>Custom Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if doc_types %}
+        // Document Type Chart
+        const docTypeCtx = document.getElementById('docTypeChart').getContext('2d');
+        const docTypeChart = new Chart(docTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for type in doc_types %}
+                    '{{ type.document_type|title }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for type in doc_types %}
+                        {{ type.count }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                        '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                        '#fa709a', '#fee140', '#667eea', '#764ba2'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        {% if risk_levels %}
+        // Risk Level Chart
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(riskCtx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    {% for risk in risk_levels %}
+                    '{{ risk.risk_level }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Number of Cases',
+                    data: [
+                        {% for risk in risk_levels %}
+                        {{ risk.count }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        {% for risk in risk_levels %}
+                        '{% if risk.risk_level == "Critical" %}#721c24
+                         {% elif risk.risk_level == "High" %}#f8d7da
+                         {% elif risk.risk_level == "Medium" %}#fff3cd
+                         {% else %}#d4edda{% endif %}',
+                        {% endfor %}
+                    ],
+                    borderColor: [
+                        {% for risk in risk_levels %}
+                        '{% if risk.risk_level == "Critical" %}#721c24
+                         {% elif risk.risk_level == "High" %}#721c24
+                         {% elif risk.risk_level == "Medium" %}#856404
+                         {% else %}#155724{% endif %}',
+                        {% endfor %}
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        // Monthly Trends Chart (Sample Data)
+        const trendsCtx = document.getElementById('monthlyTrendsChart').getContext('2d');
+        const trendsChart = new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Documents Uploaded',
+                    data: [12, 19, 15, 25, 22, 30, 28, 35, 32, 40, 38, 45],
+                    borderColor: '#9c27b0',
+                    backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Documents Processed',
+                    data: [10, 17, 14, 22, 20, 28, 25, 32, 30, 38, 35, 42],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .stat-card {
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    canvas {
+        max-height: 250px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,271 @@
+<!-- templates/admin/audit_logs.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Audit Logs - Medical System Admin{% endblock %}
+{% block page_title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Action Type</label>
+                    <select class="form-control" name="action_type">
+                        <option value="">All Actions</option>
+                        {% for action, label in action_types %}
+                        <option value="{{ action }}" {% if request.GET.action_type == action %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" class="form-control" name="date_from" 
+                           value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" class="form-control" name="date_to" 
+                           value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="btn-group w-100">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="{% url 'admin_audit_logs' %}" class="btn btn-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ logs.count }}</h3>
+                    <p class="text-muted">Total Logs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ today_logs|default:0 }}</h3>
+                    <p class="text-muted">Today's Logs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ unique_users|default:0 }}</h3>
+                    <p class="text-muted">Unique Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ login_count|default:0 }}</h3>
+                    <p class="text-muted">Login Attempts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Audit Logs Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Audit Logs</span>
+            <div>
+                <button class="btn btn-sm btn-success" onclick="exportLogs('csv')">
+                    <i class="fas fa-download me-1"></i>Export CSV
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="clearOldLogs()">
+                    <i class="fas fa-trash me-1"></i>Clear Old Logs
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>
+                                <div>{{ log.timestamp|date:"Y-m-d" }}</div>
+                                <small class="text-muted">{{ log.timestamp|time:"H:i:s" }}</small>
+                            </td>
+                            <td>
+                                {% if log.user %}
+                                <div class="fw-bold">{{ log.user.username }}</div>
+                                <small class="text-muted">{{ log.user.get_role_display }}</small>
+                                {% else %}
+                                <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if log.action == 'LOGIN' %}success{% elif log.action == 'LOGOUT' %}info{% elif log.action == 'REGISTER' %}primary{% elif log.action == 'APPROVAL' %}warning{% elif log.action == 'DELETE' %}danger{% else %}secondary{% endif %}">
+                                    {{ log.get_action_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.details %}
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showDetails('{{ log.details|escapejs }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ log.ip_address|default:"-" }}</code>
+                            </td>
+                            <td>
+                                {% if log.user_agent %}
+                                <small class="text-muted" title="{{ log.user_agent }}">
+                                    {{ log.user_agent|truncatechars:30 }}
+                                </small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                                <h5>No Audit Logs Found</h5>
+                                <p class="text-muted">No activity has been logged yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if logs.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if logs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in logs.paginator.page_range %}
+                    {% if logs.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="detailsContent" class="bg-light p-3 rounded" style="max-height: 400px; overflow: auto;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function showDetails(details) {
+        try {
+            const parsed = JSON.parse(details);
+            document.getElementById('detailsContent').textContent = JSON.stringify(parsed, null, 2);
+        } catch {
+            document.getElementById('detailsContent').textContent = details;
+        }
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
+    }
+    
+    function exportLogs(format) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('export', format);
+        window.location.href = '?' + params.toString();
+    }
+    
+    function clearOldLogs() {
+        if (confirm('Are you sure you want to delete logs older than 30 days? This cannot be undone.')) {
+            fetch('/api/admin/audit-logs/clear-old/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Deleted ${data.deleted_count} old logs`);
+                    location.reload();
+                }
+            });
+        }
+    }
+    
+    // Real-time updates for new logs
+    function pollForNewLogs() {
+        fetch('/api/admin/audit-logs/latest/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.new_logs > 0) {
+                    showToast(`${data.new_logs} new log(s) added`, 'info');
+                }
+            })
+            .finally(() => {
+                setTimeout(pollForNewLogs, 10000); // Poll every 10 seconds
+            });
+    }
+    
+    // Start polling after page load
+    document.addEventListener('DOMContentLoaded', pollForNewLogs);
+</script>
+{% endblock %}
+{% endblock %}

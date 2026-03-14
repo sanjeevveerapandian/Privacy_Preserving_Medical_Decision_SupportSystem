@@ -1,0 +1,377 @@
+<!-- templates/admin/system_monitoring.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}System Monitoring - Medical System Admin{% endblock %}
+{% block page_title %}System Monitoring{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- System Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ system_stats.active_users_24h|default:0 }}</h3>
+                    <p class="text-muted">Active Users (24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ system_stats.total_chats|default:0 }}</h3>
+                    <p class="text-muted">Total Chats</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ system_stats.total_predictions|default:0 }}</h3>
+                    <p class="text-muted">ML Predictions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3>{{ system_stats.active_sessions|default:0 }}</h3>
+                    <p class="text-muted">Active Sessions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Health -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>System Health</span>
+                    <span class="badge bg-success">Healthy</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-database fa-3x text-primary mb-2"></i>
+                                <h5>Database</h5>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-server fa-3x text-primary mb-2"></i>
+                                <h5>Server</h5>
+                                <span class="badge bg-success">Running</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-robot fa-3x text-primary mb-2"></i>
+                                <h5>AI Service</h5>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-mail-bulk fa-3x text-primary mb-2"></i>
+                                <h5>Email Service</h5>
+                                <span class="badge bg-success">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">User Activity (Last 7 Days)</div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">User Distribution by Role</div>
+                <div class="card-body">
+                    <canvas id="roleChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent System Logs</span>
+                    <button class="btn btn-sm btn-primary" onclick="refreshLogs()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Level</th>
+                                    <th>Component</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTable">
+                                {% for log in system_logs %}
+                                <tr class="log-{{ log.level|lower }}">
+                                    <td>{{ log.timestamp|date:"H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if log.level == 'ERROR' %}danger{% elif log.level == 'WARNING' %}warning{% elif log.level == 'INFO' %}info{% else %}secondary{% endif %}">
+                                            {{ log.level }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.component }}</td>
+                                    <td>{{ log.message|truncatechars:100 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">No system logs available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">System Actions</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100 mb-2" onclick="clearCache()">
+                                <i class="fas fa-broom me-2"></i>Clear Cache
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-warning w-100 mb-2" onclick="sendTestEmail()">
+                                <i class="fas fa-envelope me-2"></i>Test Email
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-info w-100 mb-2" onclick="testAIService()">
+                                <i class="fas fa-robot me-2"></i>Test AI Service
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-danger w-100 mb-2" onclick="backupDatabase()">
+                                <i class="fas fa-database me-2"></i>Backup Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Activity Chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Logins',
+                data: [12, 19, 8, 15, 22, 18, 14],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Chats',
+                data: [8, 12, 6, 10, 15, 12, 9],
+                borderColor: '#2ecc71',
+                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+    
+    // Role Distribution Chart
+    const roleCtx = document.getElementById('roleChart').getContext('2d');
+    const roleChart = new Chart(roleCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Doctors', 'Patients', 'Researchers', 'Admins'],
+            datasets: [{
+                data: [{{ role_counts.doctor }}, {{ role_counts.patient }}, {{ role_counts.researcher }}, {{ admin_count|default:0 }}],
+                backgroundColor: [
+                    '#9c27b0',
+                    '#ff9800',
+                    '#009688',
+                    '#2196f3'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // System Actions
+    function clearCache() {
+        if (confirm('Clear all system cache?')) {
+            fetch('/api/admin/system/clear-cache/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Cache cleared successfully!');
+                }
+            });
+        }
+    }
+    
+    function sendTestEmail() {
+        const email = prompt('Enter email address for test:');
+        if (email) {
+            fetch('/api/admin/system/test-email/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({email: email})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Test email sent successfully!');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+    }
+    
+    function testAIService() {
+        fetch('/api/admin/system/test-ai/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('AI Service is working! Response: ' + data.response);
+                } else {
+                    alert('AI Service error: ' + data.error);
+                }
+            });
+    }
+    
+    function backupDatabase() {
+        if (confirm('Create database backup? This may take a moment.')) {
+            fetch('/api/admin/system/backup/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Backup created successfully!');
+                }
+            });
+        }
+    }
+    
+    function refreshLogs() {
+        fetch('/api/admin/system/logs/')
+            .then(response => response.json())
+            .then(data => {
+                const table = document.getElementById('logsTable');
+                table.innerHTML = '';
+                
+                if (data.logs.length === 0) {
+                    table.innerHTML = '<tr><td colspan="4" class="text-center py-4">No system logs available</td></tr>';
+                    return;
+                }
+                
+                data.logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.className = `log-${log.level.toLowerCase()}`;
+                    row.innerHTML = `
+                        <td>${log.timestamp}</td>
+                        <td><span class="badge bg-${log.level === 'ERROR' ? 'danger' : log.level === 'WARNING' ? 'warning' : log.level === 'INFO' ? 'info' : 'secondary'}">${log.level}</span></td>
+                        <td>${log.component}</td>
+                        <td>${log.message}</td>
+                    `;
+                    table.appendChild(row);
+                });
+            });
+    }
+    
+    // Auto-refresh logs every 30 seconds
+    setInterval(refreshLogs, 30000);
+    
+    // Update charts every minute
+    setInterval(() => {
+        fetch('/api/admin/system/stats/')
+            .then(response => response.json())
+            .then(data => {
+                // Update activity chart
+                if (data.activity_data) {
+                    activityChart.data.datasets[0].data = data.activity_data.logins;
+                    activityChart.data.datasets[1].data = data.activity_data.chats;
+                    activityChart.update();
+                }
+                
+                // Update role chart
+                if (data.role_data) {
+                    roleChart.data.datasets[0].data = [
+                        data.role_data.doctors,
+                        data.role_data.patients,
+                        data.role_data.researchers,
+                        data.role_data.admins
+                    ];
+                    roleChart.update();
+                }
+            });
+    }, 60000);
+</script>
+
+<style>
+    .log-error { background-color: rgba(231, 76, 60, 0.1); }
+    .log-warning { background-color: rgba(243, 156, 18, 0.1); }
+    .log-info { background-color: rgba(52, 152, 219, 0.1); }
+</style>
+{% endblock %}
+{% endblock %}

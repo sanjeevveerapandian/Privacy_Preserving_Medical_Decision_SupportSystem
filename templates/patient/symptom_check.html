@@ -1,0 +1,508 @@
+{% extends 'patient_base.html' %}
+
+{% block title %}Symptom Checker - Medical System{% endblock %}
+
+{% block page_title %}Symptom Checker{% endblock %}
+{% block page_subtitle %}Relatively assess your health status and risk levels{% endblock %}
+
+{% block extra_css %}
+<style>
+    .symptom-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .symptom-item {
+        background: white;
+        border: 2px solid #edf2f7;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .symptom-item:hover {
+        border-color: var(--patient-primary);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .symptom-item.selected {
+        border-color: var(--patient-primary);
+        background: rgba(52, 152, 219, 0.05);
+    }
+
+    .symptom-item.selected .check-icon {
+        display: block;
+    }
+
+    .symptom-icon {
+        font-size: 2rem;
+        color: #cbd5e0;
+        margin-bottom: 12px;
+        transition: color 0.3s;
+    }
+
+    .symptom-item.selected .symptom-icon {
+        color: var(--patient-primary);
+    }
+
+    .symptom-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #4a5568;
+    }
+
+    .check-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: var(--patient-primary);
+        display: none;
+    }
+
+    .severity-selector {
+        display: none;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .symptom-item.selected .severity-selector {
+        display: block;
+    }
+
+    /* Fuzzy Chart Styling */
+    .fuzzy-chart {
+        display: flex;
+        height: 180px;
+        align-items: flex-end;
+        justify-content: space-around;
+        gap: 15px;
+        margin: 30px 0;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 15px;
+        position: relative;
+    }
+
+    .fuzzy-bar-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        max-width: 100px;
+    }
+
+    .fuzzy-bar {
+        width: 100%;
+        min-height: 4px;
+        border-radius: 8px 8px 0 0;
+        transition: height 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .fuzzy-bar.low {
+        background: linear-gradient(to top, #27ae60, #2ecc71);
+    }
+
+    .fuzzy-bar.medium {
+        background: linear-gradient(to top, #f39c12, #f1c40f);
+    }
+
+    .fuzzy-bar.high {
+        background: linear-gradient(to top, #e74c3c, #ff7675);
+    }
+
+    .fuzzy-value {
+        font-weight: 800;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+
+    .fuzzy-label {
+        margin-top: 10px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .analysis-result-card {
+        display: none;
+        animation: slideInUp 0.6s ease-out forwards;
+    }
+
+    .duration-tag-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .duration-tag {
+        background: #edf2f7;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 5px 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 80px;
+        transition: all 0.2s;
+        cursor: default;
+    }
+
+    .duration-tag.active {
+        border-color: var(--patient-primary);
+        background: rgba(52, 152, 219, 0.05);
+    }
+
+    .duration-header {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #718096;
+        margin-bottom: -2px;
+    }
+
+    .duration-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--patient-primary);
+    }
+
+    .duration-add-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--patient-primary);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: transform 0.1s, background 0.2s;
+    }
+
+    .duration-add-btn:hover {
+        background: #2980b9;
+        transform: scale(1.05);
+    }
+
+    .duration-add-btn:active {
+        transform: scale(0.95);
+    }
+
+    @keyframes slideInUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-check me-2"></i>Select Your Symptoms
+                </h5>
+                <span class="badge badge-info" id="selected-count">0 Selected</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Please click on the symptoms you are experiencing. You can select multiple.
+                </p>
+
+                <div class="symptom-grid">
+                    {% for symptom in common_symptoms %}
+                    <div class="symptom-item" onclick="toggleSymptom(this)" data-code="{{ symptom.code }}"
+                        data-name="{{ symptom.name }}">
+                        <i class="check-icon fas fa-check-circle"></i>
+                        <div class="symptom-icon">
+                            <i class="{{ symptom.icon }}"></i>
+                        </div>
+                        <div class="symptom-name">{{ symptom.name }}</div>
+
+                        <div class="severity-selector" onclick="event.stopPropagation()">
+                            <select class="form-select form-select-sm severity-input mb-2">
+                                <option value="low">Mild</option>
+                                <option value="medium" selected>Moderate</option>
+                                <option value="high">Severe</option>
+                            </select>
+
+                            <div class="duration-tag-container mt-2">
+                                <div class="duration-tag active" style="min-width: 60px; padding: 2px 10px;">
+                                    <div class="duration-header" style="font-size: 0.55rem;">Days</div>
+                                    <div class="duration-value item-duration-value" style="font-size: 1rem;">1</div>
+                                </div>
+                                <button type="button" class="duration-add-btn"
+                                    style="width: 32px; height: 32px; font-size: 1rem;"
+                                    onclick="incrementItemDuration(this, event)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <input type="hidden" class="item-duration-input" value="1">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 mb-4">
+                    <label for="extra-symptoms" class="form-label fw-bold">Additional Symptoms or Notes</label>
+                    <textarea class="form-control" id="extra-symptoms" rows="4"
+                        placeholder="Describe any other symptoms or provide more context for your doctor..."></textarea>
+                    <div class="form-text">Your doctor will review these notes along with your selected symptoms.</div>
+                </div>
+
+                <div class="d-grid shadow-sm">
+                    <button class="btn btn-primary btn-lg py-3" onclick="showSubmissionModal()" id="send-btn">
+                        <i class="fas fa-paper-plane me-2"></i>Send to My Doctor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Professional Review
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p class="small mb-0">
+                        Once you submit your symptoms, they are sent directly to your primary care doctor for a
+                        professional clinical review.
+                    </p>
+                </div>
+                <div class="mt-4">
+                    <h6><i class="fas fa-user-md text-success me-2"></i>Expert Analysis</h6>
+                    <p class="small text-muted">A medical professional will evaluate your reported symptoms alongside
+                        your medical history for the most accurate assessment.</p>
+                </div>
+                <div class="mt-4">
+                    <h6><i class="fas fa-clock text-primary me-2"></i>Response Time</h6>
+                    <p class="small text-muted">Doctors typically review submissions within 24-48 hours. If you are
+                        experiencing an emergency, please call 911 or visit the nearest ER.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Submission Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="detailsModalLabel">
+                    <i class="fas fa-user-md me-2"></i>Submission Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Please provide additional context to help your doctor assess your
+                    situation better.</p>
+
+                <form id="detailsForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Gender</label>
+                            <select class="form-select" id="patient-gender">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Occupation</label>
+                            <input type="text" class="form-control" id="patient-occupation" placeholder="e.g. Engineer">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Region (Area)</label>
+                            <input type="text" class="form-control" id="patient-region"
+                                placeholder="e.g. Downtown, City Name">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Frequency</label>
+                            <input type="text" class="form-control" id="symptom-frequency"
+                                placeholder="e.g. Daily, Intermittent">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Past History Summary</label>
+                            <textarea class="form-control" id="past-history" rows="2"
+                                placeholder="Relevant past medical history..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Upload Past History Document (Optional)</label>
+                            <input type="file" class="form-control" id="past-history-file"
+                                accept=".pdf,.doc,.docx,.jpg,.png">
+                            <div class="form-text small">Upload prescriptions, lab reports, or previous medical
+                                summaries.</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" onclick="confirmSendToDoctor()"
+                    id="confirm-send-btn">
+                    <i class="fas fa-check-circle me-2"></i>Confirm Submission
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Message Toast Container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1060">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert"
+        aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>Symptoms sent successfully to your doctor.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let submissionModal = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        submissionModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    });
+
+    function toggleSymptom(element) {
+        element.classList.toggle('selected');
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.symptom-item.selected').length;
+        document.getElementById('selected-count').innerText = `${selected} Selected`;
+    }
+
+    function incrementItemDuration(btn, event) {
+        event.stopPropagation();
+        const container = btn.closest('.duration-tag-container');
+        const input = container.querySelector('.item-duration-input');
+        const display = container.querySelector('.item-duration-value');
+        let val = parseInt(input.value) || 0;
+        val++;
+        if (val > 90) val = 1;
+        input.value = val;
+        display.innerText = val;
+    }
+
+    function showSubmissionModal() {
+        const selectedItems = document.querySelectorAll('.symptom-item.selected');
+        const extraSymptoms = document.getElementById('extra-symptoms').value.trim();
+
+        if (selectedItems.length === 0 && !extraSymptoms) {
+            alert('Please select at least one symptom or provide clinical notes.');
+            return;
+        }
+
+        submissionModal.show();
+    }
+
+    async function confirmSendToDoctor() {
+        const btn = document.getElementById('confirm-send-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+        const selectedItems = document.querySelectorAll('.symptom-item.selected');
+        const extraSymptoms = document.getElementById('extra-symptoms').value.trim();
+
+        const symptoms = Array.from(selectedItems).map(item => ({
+            code: item.dataset.code,
+            name: item.dataset.name,
+            severity: item.querySelector('.severity-input').value,
+            duration: item.querySelector('.item-duration-input').value + ' Days'
+        }));
+
+        const formData = new FormData();
+        formData.append('gender', document.getElementById('patient-gender').value);
+        formData.append('occupation', document.getElementById('patient-occupation').value.trim());
+        formData.append('region', document.getElementById('patient-region').value.trim());
+        formData.append('frequency', document.getElementById('symptom-frequency').value.trim());
+        formData.append('past_history', document.getElementById('past-history').value.trim());
+        formData.append('extra_symptoms', extraSymptoms);
+        formData.append('symptoms', JSON.stringify(symptoms));
+
+        const historyFile = document.getElementById('past-history-file').files[0];
+        if (historyFile) {
+            formData.append('past_history_file', historyFile);
+        }
+
+        const maxDuration = Math.max(...symptoms.map(s => parseInt(s.duration) || 0)) + ' Days';
+        formData.append('duration', maxDuration);
+
+        try {
+            const response = await fetch('{% url "patient_symptom_check" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                submissionModal.hide();
+
+                // Show success toast
+                const toastEl = document.getElementById('successToast');
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+
+                // Clear form
+                selectedItems.forEach(item => item.classList.remove('selected'));
+                document.getElementById('extra-symptoms').value = '';
+                document.getElementById('detailsForm').reset();
+                updateSelectedCount();
+
+                // Optional: redirect after short delay
+                setTimeout(() => {
+                    window.location.href = '{% url "patient_dashboard" %}';
+                }, 2000);
+            } else {
+                alert('Submission failed: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while sending symptoms.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+<!-- templates/admin/user_management.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}User Management - Medical System Admin{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="search" placeholder="Search by name, email or username..." 
+                           value="{{ request.GET.search|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" name="role">
+                        <option value="">All Roles</option>
+                        <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="doctor" {% if request.GET.role == 'doctor' %}selected{% endif %}>Doctor</option>
+                        <option value="patient" {% if request.GET.role == 'patient' %}selected{% endif %}>Patient</option>
+                        <option value="researcher" {% if request.GET.role == 'researcher' %}selected{% endif %}>Researcher</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" name="status">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>All Users ({{ total_users }})</span>
+            <div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Active</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>#{{ user.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">
+                                            <a href="{% url 'admin_user_detail' user.id %}" class="text-decoration-none">
+                                                {{ user.get_full_name|default:user.username }}
+                                            </a>
+                                        </div>
+                                        <div class="small text-muted">
+                                            {{ user.username }} • {{ user.email }}
+                                        </div>
+                                        <div class="small">
+                                            Joined: {{ user.date_joined|date:"M d, Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ user.role }}">
+                                    {{ user.get_role_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ user.status }}">
+                                    {{ user.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                {{ user.last_login|timesince }} ago
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'admin_user_detail' user.id %}">
+                                                <i class="fas fa-eye me-2"></i>View Details
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% if user.is_active %}
+                                        <li>
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="deactivate">
+                                                <button type="submit" class="dropdown-item text-warning" 
+                                                        onclick="return confirm('Deactivate this user?')">
+                                                    <i class="fas fa-user-slash me-2"></i>Deactivate
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% else %}
+                                        <li>
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="activate">
+                                                <button type="submit" class="dropdown-item text-success">
+                                                    <i class="fas fa-user-check me-2"></i>Activate
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        {% if user.status == 'pending' %}
+                                        <li>
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="approve">
+                                                <button type="submit" class="dropdown-item text-success">
+                                                    <i class="fas fa-check me-2"></i>Approve
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        <li>
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="delete">
+                                                <button type="submit" class="dropdown-item text-danger" 
+                                                        onclick="return confirm('Permanently delete this user? This cannot be undone!')">
+                                                    <i class="fas fa-trash me-2"></i>Delete
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                                <h5>No Users Found</h5>
+                                <p class="text-muted">Try adjusting your search filters</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if users.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in users.paginator.page_range %}
+                    {% if users.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    
+
+</div>
+
+
+
+{% block extra_js %}
+<script>
+    // Auto-focus search input
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.focus();
+        }
+    });
+    
+    // Export users functionality
+    function exportUsers(format) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('export', format);
+        window.location.href = '?' + params.toString();
+    }
+</script>
+{% endblock %}
+{% endblock %}

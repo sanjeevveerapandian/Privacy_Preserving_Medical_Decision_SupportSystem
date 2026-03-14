@@ -1,0 +1,209 @@
+<!-- templates/admin/dashboard.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Admin Dashboard - Medical System{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-icon doctors">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="stat-value">{{ role_counts.doctor }}</div>
+                <div class="stat-label">Doctors</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-icon patients">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+                <div class="stat-value">{{ role_counts.patient }}</div>
+                <div class="stat-label">Patients</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-icon pending">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-value">{{ pending_users }}</div>
+                <div class="stat-label">Pending Approval</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Users -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Users</span>
+                    <a href="{% url 'admin_user_management' %}" class="btn btn-primary btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td>#{{ user.id }}</td>
+                                    <td>
+                                        <a href="{% url 'admin_user_detail' user.id %}" class="text-decoration-none">
+                                            {{ user.username }}
+                                        </a>
+                                    </td>
+                                    <td>{{ user.get_full_name|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ user.role }}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ user.status }}">
+                                            {{ user.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No users found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">System Stats</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Approved Users
+                            <span class="badge bg-success rounded-pill">{{ approved_users }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Researchers
+                            <span class="badge bg-info rounded-pill">{{ role_counts.researcher }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Today's Logins
+                            <span class="badge bg-primary rounded-pill">{{ today_logins|default:"0" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            System Health
+                            <span class="badge bg-success rounded-pill">Healthy</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">Quick Actions</div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin_user_approval' %}" class="btn btn-warning">
+                            <i class="fas fa-user-check me-2"></i>Review Pending Users
+                            {% if pending_users %}
+                            <span class="badge bg-danger ms-2">{{ pending_users }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'admin_audit_logs' %}" class="btn btn-info">
+                            <i class="fas fa-history me-2"></i>View Audit Logs
+                        </a>
+                        <a href="{% url 'admin_system_monitoring' %}" class="btn btn-success">
+                            <i class="fas fa-chart-line me-2"></i>System Monitoring
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">Recent Activity Log</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in recent_logs %}
+                                <tr>
+                                    <td>{{ log.timestamp|timesince }} ago</td>
+                                    <td>
+                                        {% if log.user %}
+                                        {{ log.user.username }}
+                                        {% else %}
+                                        <em>System</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if log.action == 'LOGIN' %}success{% elif log.action == 'LOGOUT' %}info{% elif log.action == 'REGISTER' %}primary{% elif log.action == 'APPROVAL' %}warning{% else %}secondary{% endif %}">
+                                            {{ log.get_action_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if log.details %}
+                                        <small class="text-muted">{{ log.details|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ log.ip_address|default:"-" }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">No activity logs found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

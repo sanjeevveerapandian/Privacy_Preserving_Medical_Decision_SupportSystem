@@ -1,0 +1,474 @@
+<!-- templates/doctor/appointment_detail.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Appointment Details - Doctor Portal{% endblock %}
+{% block page_title %}Appointment Details{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-calendar-check me-1"></i>View appointment information
+{% endblock %}
+
+<!-- NO_FORMAT -->
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <!-- Appointment Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Appointment Information</span>
+                    <span class="badge bg-{{ appointment.status }}">
+                        {{ appointment.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Patient Information</h6>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="user-avatar me-3" style="width: 50px; height: 50px;">
+                                    {{ appointment.patient.username|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-5">
+                                        {% with n=appointment.patient.full_name %}
+                                        {{ n|default:appointment.patient.username }}
+                                        {% endwith %}
+                                    </div>
+                                    <div class="text-muted">{{ appointment.patient.email }}</div>
+                                </div>
+                            </div>
+
+                            <div class="patient-details">
+                                {% if appointment.patient.phone %}
+                                <div class="mb-2">
+                                    <i class="fas fa-phone me-2 text-muted"></i>
+                                    {{ appointment.patient.phone }}
+                                </div>
+                                {% endif %}
+
+                                {% if appointment.patient.date_of_birth %}
+                                <div class="mb-2">
+                                    <i class="fas fa-birthday-cake me-2 text-muted"></i>
+                                    {{ appointment.patient.date_of_birth|date:"F d, Y" }}
+                                    ({{ appointment.patient.age|default:"Age not specified" }})
+                                </div>
+                                {% endif %}
+
+                                <div class="mb-2">
+                                    <i class="fas fa-notes-medical me-2 text-muted"></i>
+                                    <span class="badge badge-{{ appointment.patient.risk_level|default:'low' }}">
+                                        Risk: {{ appointment.patient.get_risk_level_display|default:"Not assessed" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Appointment Details</h6>
+                            <div class="appointment-details">
+                                <div class="detail-item mb-3">
+                                    <div class="detail-label">Date</div>
+                                    <div class="detail-value fw-bold">
+                                        {{ appointment.appointment_date|date:"l, F d, Y" }}
+                                    </div>
+                                </div>
+
+                                <div class="detail-item mb-3">
+                                    <div class="detail-label">Time</div>
+                                    <div class="detail-value fw-bold">
+                                        {{ appointment.appointment_time|time:"g:i A" }}
+                                    </div>
+                                </div>
+
+                                <div class="detail-item mb-3">
+                                    <div class="detail-label">Duration</div>
+                                    <div class="detail-value">
+                                        {{ appointment.duration|default:"30 minutes" }}
+                                    </div>
+                                </div>
+
+                                <div class="detail-item mb-3">
+                                    <div class="detail-label">Type</div>
+                                    <div class="detail-value">
+                                        {{ appointment.appointment_type|default:"General Consultation" }}
+                                    </div>
+                                </div>
+
+                                <div class="detail-item mb-3">
+                                    <div class="detail-label">Appointment ID</div>
+                                    <div class="detail-value">
+                                        <code>{{ appointment.appointment_id }}</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reason and Notes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Reason for Appointment</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    {{ appointment.reason|default:"No reason provided" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if appointment.notes %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Doctor's Notes</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    {{ appointment.notes }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Video Consultation Section -->
+            <div class="card mt-4 shadow-sm border-doctor">
+                <div class="card-header bg-doctor text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-video me-2"></i>Secure Video Consultation</span>
+                    {% if appointment.is_video_consultation %}
+                    <span class="badge bg-success">Active</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if not appointment.meeting_link or appointment.status in 'completed,cancelled' %}
+                    <div class="text-center py-3">
+                        <p class="text-muted">No active video meeting exists for this appointment.</p>
+                        <a href="{% url 'doctor_create_video_meeting' appointment.appointment_id %}"
+                            class="btn btn-doctor">
+                            <i class="fas fa-plus-circle me-2"></i>Create Secure Meeting Link
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-link me-2"></i><strong>Meeting Link:</strong>
+                                {% with u=appointment.meeting_link %}
+                                <a href="{{ u }}" target="_blank" class="text-break">{{ u }}</a>
+                                {% endwith %}
+                            </div>
+                            <a href="{{ appointment.meeting_link }}" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="fas fa-video me-1"></i> Join
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {% if not appointment.meeting_summary %}
+                        <button class="btn btn-outline-doctor" onclick="showSummaryModal()">
+                            <i class="fas fa-magic me-2"></i>Generate AI Summary from Transcript
+                        </button>
+                        {% else %}
+                        <a href="{% url 'doctor_view_meeting_summary' appointment.appointment_id %}"
+                            class="btn btn-success">
+                            <i class="fas fa-file-alt me-2"></i>View Encrypted Meeting Minutes
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light small text-muted">
+                    <i class="fas fa-shield-alt me-1"></i> Video stream is encrypted via WebRTC. AI-generated clinical
+                    summaries are stored in an encrypted format and decrypted just-in-time for authorized review.
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Medical Summary -->
+        <div class="col-lg-4">
+            <!-- Medical Records -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-medical me-2"></i>Recent Medical Records
+                </div>
+                <div class="card-body">
+                    {% if medical_records %}
+                    <div class="medical-history">
+                        {% for record in medical_records %}
+                        <div class="record-item mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold small">{{ record.created_at|date:"M d, Y" }}</div>
+                                    <div class="small text-muted">
+                                        {{ record.get_diagnosis_summary|truncatechars:40 }}
+                                    </div>
+                                </div>
+                                <span class="badge badge-{{ record.risk_level }}">
+                                    {{ record.get_risk_level_display|slice:":1" }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}
+                        <hr class="my-2">{% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'doctor_patient_detail' appointment.patient.id %}"
+                            class="btn btn-sm btn-outline-doctor">
+                            View Full History
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-file-medical-alt fa-2x text-muted mb-3"></i>
+                        <p class="text-muted small">No medical records found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">Quick Actions</div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'doctor_patient_detail' appointment.patient.id %}"
+                            class="btn btn-outline-primary mb-2">
+                            <i class="fas fa-user-injured me-2"></i>View Patient Profile
+                        </a>
+                        <a href="{% url 'doctor_patient_analysis' appointment.patient.id %}"
+                            class="btn btn-outline-doctor mb-2">
+                            <i class="fas fa-stethoscope me-2"></i>Analyze Symptoms
+                        </a>
+                        <a href="{% url 'doctor_appointments' %}?search={{ appointment.patient.username }}"
+                            class="btn btn-outline-success mb-2">
+                            <i class="fas fa-calendar me-2"></i>All Appointments
+                        </a>
+                        <a href="{% url 'doctor_chat' %}?patient={{ appointment.patient.id }}"
+                            class="btn btn-outline-info mb-2">
+                            <i class="fas fa-comment-medical me-2"></i>AI Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reschedule Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">New Date</label>
+                    <input type="date" class="form-control" id="newDate"
+                        value="{{ appointment.appointment_date|date:'Y-m-d' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Time</label>
+                    <input type="time" class="form-control" id="newTime"
+                        value="{{ appointment.appointment_time|time:'H:i' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reason for Rescheduling</label>
+                    <textarea class="form-control" id="rescheduleReason" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-doctor" onclick="rescheduleAppointment()">Reschedule</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Modal -->
+<div class="modal fade" id="summaryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate AI Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning small">
+                    <i class="fas fa-user-secret me-1"></i> <strong>Blind LLM Active:</strong> The transcript will be
+                    anonymized before being sent to the AI for summarization.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Meeting Transcript</label>
+                    <p class="text-muted small">Paste the transcript of the video call here. AI will detect symptoms and
+                        next steps.</p>
+                    <textarea class="form-control" id="meetingTranscript" rows="10"
+                        placeholder="Doctor: How are you feeling today?&#10;Patient: I have a severe headache..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-doctor" id="generateBtn" onclick="generateSummary()">
+                    <i class="fas fa-magic me-1"></i>Generate Encrypted Summary
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Update appointment status
+    function updateStatus(newStatus) {
+        const action = newStatus === 'confirmed' ? 'confirm' : 'reject';
+        if (!confirm(`Are you sure you want to ${action} this appointment?`)) return;
+
+        fetch('{% url "doctor_update_appointment_status" appointment.appointment_id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: newStatus,
+                notes: ''
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Appointment ${action}ed successfully`, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            });
+    }
+
+    // Show reschedule modal
+    function showRescheduleModal() {
+        const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+        modal.show();
+    }
+
+    // Reschedule appointment
+    function rescheduleAppointment() {
+        const newDate = document.getElementById('newDate').value;
+        const newTime = document.getElementById('newTime').value;
+        const reason = document.getElementById('rescheduleReason').value;
+
+        if (!newDate || !newTime) {
+            showToast('Please select both date and time', 'error');
+            return;
+        }
+
+        fetch('{% url "doctor_update_appointment_time" appointment.appointment_id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                date: newDate,
+                time: newTime
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Appointment rescheduled successfully', 'success');
+                    document.getElementById('rescheduleModal').querySelector('.btn-close').click();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            });
+    }
+
+    // Show summary modal
+    function showSummaryModal() {
+        const modal = new bootstrap.Modal(document.getElementById('summaryModal'));
+        modal.show();
+    }
+
+    // Generate summary
+    function generateSummary() {
+        const transcript = document.getElementById('meetingTranscript').value;
+        const btn = document.getElementById('generateBtn');
+
+        if (!transcript.trim()) {
+            showToast('Please provide a transcript', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+        fetch('{% url "doctor_process_meeting_summary" appointment.appointment_id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                transcript: transcript
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('AI Summary generated and encrypted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Encrypted Summary';
+                    showToast(data.error, 'error');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate Encrypted Summary';
+                showToast('Error processing request', 'error');
+            });
+    }
+</script>
+
+<style>
+    .detail-item {
+        padding: 8px 0;
+    }
+
+    .detail-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .detail-value {
+        font-size: 1rem;
+    }
+
+    .record-item {
+        padding: 8px;
+        border-radius: 6px;
+        transition: background-color 0.3s;
+    }
+
+    .record-item:hover {
+        background-color: rgba(156, 39, 176, 0.05);
+    }
+
+    .patient-details div {
+        padding: 4px 0;
+    }
+</style>
+{% endblock %}
+{% endblock %}

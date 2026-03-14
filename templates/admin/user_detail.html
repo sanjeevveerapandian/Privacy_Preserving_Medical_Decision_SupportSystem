@@ -1,0 +1,390 @@
+<!-- templates/admin/user_detail.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}User Details - Medical System Admin{% endblock %}
+{% block page_title %}User Details: {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- User Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="user-avatar-large mb-3 mx-auto">
+                        {{ user_obj.username|first|upper }}
+                    </div>
+                    <h4>{{ user_obj.get_full_name|default:user_obj.username }}</h4>
+                    <p class="text-muted">{{ user_obj.email }}</p>
+                    
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <span class="badge badge-{{ user_obj.role }}">
+                            {{ user_obj.get_role_display }}
+                        </span>
+                        <span class="badge badge-{{ user_obj.status }}">
+                            {{ user_obj.get_status_display }}
+                        </span>
+                        {% if user_obj.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal">
+                            <i class="fas fa-edit me-1"></i>Edit User
+                        </button>
+                        {% if user_obj.is_active %}
+                        <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user_obj.id }}">
+                            <input type="hidden" name="action" value="deactivate">
+                            <button type="submit" class="btn btn-warning btn-sm" 
+                                    onclick="return confirm('Deactivate this user?')">
+                                <i class="fas fa-user-slash me-1"></i>Deactivate
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'admin_user_management' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user_obj.id }}">
+                            <input type="hidden" name="action" value="activate">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-user-check me-1"></i>Activate
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">User Information</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">Username:</th>
+                                    <td>{{ user_obj.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>{{ user_obj.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Full Name:</th>
+                                    <td>{{ user_obj.get_full_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone:</th>
+                                    <td>{{ user_obj.phone|default:"Not provided" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">Joined Date:</th>
+                                    <td>{{ user_obj.date_joined|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Login:</th>
+                                    <td>
+                                        {% if user_obj.last_login %}
+                                        {{ user_obj.last_login|date:"M d, Y H:i" }}
+                                        {% else %}
+                                        <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Date of Birth:</th>
+                                    <td>{{ user_obj.date_of_birth|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>{{ user_obj.address|default:"Not provided"|truncatechars:50 }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Role-specific Information -->
+                    {% if user_obj.role == 'doctor' %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h6><i class="fas fa-user-md me-2"></i>Doctor Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Specialization:</strong> {{ user_obj.specialization|default:"Not specified" }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>License Number:</strong> {{ user_obj.license_number|default:"Not provided" }}
+                            </div>
+                        </div>
+                    </div>
+                    {% elif user_obj.role == 'researcher' %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h6><i class="fas fa-flask me-2"></i>Researcher Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Institution:</strong> {{ user_obj.institution|default:"Not specified" }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Research Area:</strong> {{ user_obj.research_area|default:"Not specified"|truncatechars:100 }}
+                            </div>
+                        </div>
+                    </div>
+                    {% elif user_obj.role == 'patient' %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h6><i class="fas fa-user-injured me-2"></i>Medical Information</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Risk Level:</strong>
+                                <span class="badge bg-{{ user_obj.risk_level|default:'medium' }}">
+                                    {{ user_obj.get_risk_level_display|default:"Not assessed" }}
+                                </span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Last Analysis:</strong>
+                                {% if user_obj.last_analysis %}
+                                {{ user_obj.last_analysis|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Confidence Score:</strong>
+                                {{ user_obj.ml_confidence_score|default:0|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Activity</span>
+                    <a href="{% url 'admin_audit_logs' %}?user={{ user_obj.id }}" class="btn btn-sm btn-primary">
+                        View All Activity
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if user_activity %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in user_activity %}
+                                <tr>
+                                    <td>{{ log.timestamp|timesince }} ago</td>
+                                    <td>
+                                        <span class="badge bg-{% if log.action == 'LOGIN' %}success{% elif log.action == 'LOGOUT' %}info{% elif log.action == 'UPDATE' %}warning{% else %}secondary{% endif %}">
+                                            {{ log.get_action_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ log.details|truncatechars:100 }}</small>
+                                    </td>
+                                    <td>
+                                        <code>{{ log.ip_address|default:"-" }}</code>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                        <h5>No Activity Found</h5>
+                        <p class="text-muted">This user has no recent activity.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User: {{ user_obj.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'admin_user_detail' user_obj.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" value="{{ user_obj.username }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" value="{{ user_obj.email }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="{{ user_obj.first_name }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="{{ user_obj.last_name }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-control" name="role">
+                                <option value="admin" {% if user_obj.role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="doctor" {% if user_obj.role == 'doctor' %}selected{% endif %}>Doctor</option>
+                                <option value="patient" {% if user_obj.role == 'patient' %}selected{% endif %}>Patient</option>
+                                <option value="researcher" {% if user_obj.role == 'researcher' %}selected{% endif %}>Researcher</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-control" name="status">
+                                <option value="pending" {% if user_obj.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="approved" {% if user_obj.status == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="rejected" {% if user_obj.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" value="{{ user_obj.phone|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" rows="2">{{ user_obj.address|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">New Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control" name="password">
+                    </div>
+                    
+                    {% if user_obj.role == 'doctor' %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6>Doctor Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Specialization</label>
+                                <input type="text" class="form-control" name="specialization" value="{{ user_obj.specialization|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">License Number</label>
+                                <input type="text" class="form-control" name="license_number" value="{{ user_obj.license_number|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user_obj.role == 'researcher' %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6>Researcher Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Institution</label>
+                                <input type="text" class="form-control" name="institution" value="{{ user_obj.institution|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Research Area</label>
+                                <textarea class="form-control" name="research_area" rows="2">{{ user_obj.research_area|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    // Auto-focus first input in edit modal
+    const editModal = document.getElementById('editUserModal');
+    if (editModal) {
+        editModal.addEventListener('shown.bs.modal', function() {
+            this.querySelector('input[name="username"]').focus();
+        });
+    }
+    
+    // Send email to user
+    function sendEmailToUser() {
+        const subject = prompt('Email Subject:', 'Message from System Administrator');
+        if (subject === null) return;
+        
+        const message = prompt('Email Message:', '');
+        if (message === null) return;
+        
+        fetch('/api/admin/users/{{ user_obj.id }}/send-email/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                subject: subject,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Email sent successfully!');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,934 @@
+<!-- templates/doctor/symptom_analyzer.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Symptom Analyzer - Doctor Portal{% endblock %}
+{% block page_title %}Symptom Analyzer{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-stethoscope me-1"></i>Analyze patient symptoms using AI with Fuzzy Logic
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <!-- Symptom Input -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-brain me-2"></i>Symptom Analysis with Fuzzy Logic
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user me-1"></i>Select Patient
+                            </label>
+                            <select class="form-select" id="patientSelect">
+                                <option value="">Select a patient...</option>
+                                {% for patient in patients %}
+                                <option value="{{ patient.id }}" data-age="{{ patient.profile.age|default:'35' }}">
+                                    {{ patient.get_full_name|default:patient.username }}
+                                    {% if patient.profile.age %}
+                                    (Age: {{ patient.profile.age }})
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user-clock me-1"></i>Patient Age
+                            </label>
+                            <input type="number" class="form-control" id="patientAge" min="0" max="120" value="35"
+                                placeholder="Age">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-robot me-1"></i>Model
+                            </label>
+                            <select class="form-select" id="modelSelect">
+                                <option value="ml_model">Fuzzy Logic ML Model</option>
+                                <option value="ai_assistant">AI Assistant</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-clipboard-list me-1"></i>Enter Symptoms
+                        </label>
+                        <textarea class="form-control" id="symptomsInput" rows="4" placeholder="Enter patient symptoms here. You can separate multiple symptoms with commas or new lines.
+                                  
+Example:
+- Fever above 38°C
+- Dry cough
+- Severe fatigue
+- Shortness of breath
+- Chest pain (if present)
+- Loss of taste or smell"></textarea>
+                        <div class="form-text">
+                            Enter symptoms as clearly as possible. Include severity if known.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-bolt me-1"></i>Common Symptoms (Click to add)
+                        </label>
+                        <div class="symptoms-tags">
+                            {% for symptom in common_symptoms %}
+                            <span class="symptom-tag" onclick="addSymptom('{{ symptom }}')">
+                                <i class="fas fa-plus-circle me-1"></i>{{ symptom }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button class="btn btn-doctor btn-lg" onclick="analyzeSymptoms()" id="analyzeBtn">
+                            <i class="fas fa-search me-2"></i>Analyze Symptoms with Fuzzy Logic
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="fas fa-chart-line me-2"></i>Analysis Results
+                    </span>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-success" onclick="saveAnalysis()">
+                            <i class="fas fa-save me-1"></i>Save
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="printResults()">
+                            <i class="fas fa-print me-1"></i>Print
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="resultsContent">
+                        <!-- Results will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Analyses -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="fas fa-history me-2"></i>Recent Analyses
+                    </span>
+                    <span class="badge bg-doctor">{{ total_analyses }}</span>
+                </div>
+                <div class="card-body">
+                    {% if recent_analyses %}
+                    <div class="list-group list-group-flush">
+                        {% for analysis in recent_analyses %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">
+                                        <i class="fas fa-user-injured me-1"></i>
+                                        {{ analysis.patient.get_full_name|default:analysis.patient.username }}
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        <i class="fas fa-diagnoses me-1"></i>
+                                        {{ analysis.encrypted_diagnosis|truncatechars:40 }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ analysis.created_at|date:"M d, H:i" }}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="mb-1">
+                                        <span class="badge badge-{{ analysis.risk_level }}">
+                                            {{ analysis.get_risk_level_display }}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        {{ analysis.confidence_score|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'doctor_medical_history' %}" class="btn btn-sm btn-outline-doctor">
+                            <i class="fas fa-folder-open me-1"></i>View All History
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-chart-bar fa-2x text-muted mb-3"></i>
+                        <h6>No Recent Analyses</h6>
+                        <p class="text-muted small">Start analyzing symptoms to see results here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-2"></i>Analysis Statistics
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-number text-primary">{{ total_analyses }}</div>
+                                <div class="stat-label">Total Analyses</div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-number text-danger">{{ high_risk_analyses }}</div>
+                                <div class="stat-label">High Risk</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="stat-card">
+                                <div class="stat-number text-success">{{ avg_confidence }}%</div>
+                                <div class="stat-label">Avg Confidence</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Level Legend -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Risk Level Legend
+                </div>
+                <div class="card-body">
+                    <div class="risk-legend">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-low me-3">LOW</span>
+                            <small>Normal risk, routine follow-up. Confidence typically below 70%.</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-medium me-3">MEDIUM</span>
+                            <small>Monitor symptoms, consider tests. Confidence 70-85%.</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="badge badge-high me-3">HIGH</span>
+                            <small>Urgent attention needed. Confidence above 85% with severe symptoms.</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge badge-critical me-3">CRITICAL</span>
+                            <small>Immediate medical attention. Confidence above 90% with multiple severe
+                                symptoms.</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6><i class="fas fa-info-circle me-2"></i>About Fuzzy Logic</h6>
+                        <p class="small text-muted mb-0">
+                            This system uses fuzzy logic to calculate risk levels, considering:
+                            confidence score, symptom count, severity, and patient age.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .symptoms-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .symptom-tag {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11);
+    }
+
+    .symptom-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .symptom-tag i {
+        font-size: 0.8rem;
+    }
+
+    .results-container {
+        padding: 20px;
+    }
+
+    .risk-score-display {
+        font-size: 2.5rem;
+        font-weight: 800;
+        text-align: center;
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    .risk-low {
+        color: #27ae60;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+
+    .risk-medium {
+        color: #f39c12;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    }
+
+    .risk-high {
+        color: #e74c3c;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    }
+
+    .risk-critical {
+        color: #721c24;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.8;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .confidence-meter {
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1s ease;
+    }
+
+    .fuzzy-chart {
+        display: flex;
+        height: 180px;
+        align-items: flex-end;
+        justify-content: space-around;
+        gap: 15px;
+        margin: 30px 0;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 15px;
+        position: relative;
+    }
+
+    .fuzzy-bar-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        max-width: 100px;
+    }
+
+    .fuzzy-bar {
+        width: 100%;
+        min-height: 4px;
+        /* Visible even at 0% */
+        border-radius: 8px 8px 0 0;
+        transition: height 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .fuzzy-bar.low {
+        background: linear-gradient(to top, #27ae60, #2ecc71);
+    }
+
+    .fuzzy-bar.medium {
+        background: linear-gradient(to top, #f39c12, #f1c40f);
+    }
+
+    .fuzzy-bar.high {
+        background: linear-gradient(to top, #e74c3c, #ff7675);
+    }
+
+    .fuzzy-value {
+        font-weight: 800;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+
+    .fuzzy-label {
+        margin-top: 10px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-card {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .recommendations {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .recommendations h5 {
+        color: white;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .recommendations ul {
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+
+    .recommendations li {
+        margin-bottom: 8px;
+    }
+
+    .badge-low {
+        background-color: #27ae60 !important;
+        color: white;
+    }
+
+    .badge-medium {
+        background-color: #f39c12 !important;
+        color: white;
+    }
+
+    .badge-high {
+        background-color: #e74c3c !important;
+        color: white;
+    }
+
+    .badge-critical {
+        background-color: #721c24 !important;
+        color: white;
+        animation: pulse 1.5s infinite;
+    }
+
+    .risk-legend .badge {
+        min-width: 70px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Common symptoms array
+    const commonSymptoms = [
+        'Fever above 38°C', 'Dry cough', 'Wet cough', 'Severe fatigue',
+        'Headache', 'Nausea', 'Vomiting', 'Diarrhea', 'Abdominal pain',
+        'Shortness of breath', 'Chest pain', 'Dizziness', 'Muscle pain',
+        'Sore throat', 'Loss of taste', 'Loss of smell', 'Runny nose',
+        'Sneezing', 'Itchy eyes', 'Rash', 'Joint pain', 'Back pain',
+        'Confusion', 'Seizure', 'High blood pressure', 'Rapid heartbeat'
+    ];
+
+    // Initialize symptom tags
+    function initializeSymptomTags() {
+        const container = document.querySelector('.symptoms-tags');
+        if (container.children.length === 0) {
+            commonSymptoms.forEach(symptom => {
+                const tag = document.createElement('span');
+                tag.className = 'symptom-tag';
+                tag.innerHTML = `<i class="fas fa-plus-circle me-1"></i>${symptom}`;
+                tag.onclick = () => addSymptom(symptom);
+                container.appendChild(tag);
+            });
+        }
+    }
+
+    // Add symptom to textarea
+    function addSymptom(symptom) {
+        const textarea = document.getElementById('symptomsInput');
+        const currentValue = textarea.value.trim();
+
+        if (currentValue) {
+            textarea.value = currentValue + '\n- ' + symptom;
+        } else {
+            textarea.value = '- ' + symptom;
+        }
+
+        textarea.focus();
+        autoResizeTextarea(textarea);
+    }
+
+    // Auto-resize textarea
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+    }
+
+    // Get patient age from select or input
+    function getPatientAge() {
+        const patientSelect = document.getElementById('patientSelect');
+        const ageInput = document.getElementById('patientAge');
+
+        // If patient is selected, try to get age from data attribute
+        if (patientSelect.value) {
+            const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+            const patientAge = selectedOption.getAttribute('data-age');
+            if (patientAge && patientAge !== '35') {
+                return parseInt(patientAge);
+            }
+        }
+
+        // Otherwise use the age input
+        return parseInt(ageInput.value) || 35;
+    }
+
+    // Analyze symptoms
+    function analyzeSymptoms() {
+        const symptoms = document.getElementById('symptomsInput').value.trim();
+        const patientId = document.getElementById('patientSelect').value;
+        const model = document.getElementById('modelSelect').value;
+        const patientAge = getPatientAge();
+
+        if (!symptoms) {
+            showToast('Please enter symptoms to analyze', 'error');
+            return;
+        }
+
+        // Parse symptoms into array
+        const symptomsArray = symptoms.split(/[\n,]/)
+            .map(s => s.trim().replace(/^[-•*]\s*/, ''))
+            .filter(s => s.length > 0);
+
+        if (symptomsArray.length === 0) {
+            showToast('Please enter valid symptoms', 'error');
+            return;
+        }
+
+        const resultsCard = document.getElementById('resultsCard');
+        const resultsContent = document.getElementById('resultsContent');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        // Show loading state
+        resultsContent.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-doctor mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h4>Analyzing Symptoms with Fuzzy Logic...</h4>
+                <p class="text-muted">
+                    <i class="fas fa-brain me-1"></i>
+                    Processing ${symptomsArray.length} symptoms using machine learning and fuzzy logic inference
+                </p>
+                <div class="progress mt-3" style="height: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         style="width: 75%"></div>
+                </div>
+            </div>
+        `;
+
+        // Disable button during analysis
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+
+        resultsCard.style.display = 'block';
+
+        // Determine endpoint
+        const url = model === 'ai_assistant' ?
+            '{% url "doctor_chat_send" %}' :
+            '{% url "doctor_ml_analysis" %}';
+
+        // Send request
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                symptoms: symptomsArray,
+                patient_id: patientId || null,
+                patient_age: patientAge,
+                model: 'fuzzy_ml_model'
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Re-enable button
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<i class="fas fa-search me-2"></i>Analyze Symptoms with Fuzzy Logic';
+
+                if (data.success) {
+                    displayFuzzyResults(data.result, symptomsArray);
+                } else {
+                    showToast(data.error || 'Analysis failed', 'error');
+                    resultsContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Analysis Error:</strong> ${data.error || 'Unknown error occurred'}
+                    </div>
+                `;
+                }
+            })
+            .catch(error => {
+                // Re-enable button
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<i class="fas fa-search me-2"></i>Analyze Symptoms with Fuzzy Logic';
+
+                showToast('Network error: ' + error.message, 'error');
+                resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Network Error:</strong> ${error.message}
+                    <p class="mt-2 mb-0 small">Please check your connection and try again.</p>
+                </div>
+            `;
+            });
+    }
+
+    // Display fuzzy logic results
+    function displayFuzzyResults(result, symptoms) {
+        const riskLevel = result.risk_level || 'low';
+        const confidence = result.confidence || 0;
+        const confidenceScore = result.confidence_score || confidence;
+        const prediction = result.prediction || 'No prediction available';
+        const riskScore = result.risk_score || 0;
+        const fuzzyMembership = result.fuzzy_membership || { low: 0, medium: 0, high: 0 };
+        const components = result.components || {};
+        const recommendations = result.recommendations || [];
+
+        // Calculate fuzzy bar heights (backend already provides 0-100 percentages)
+        const lowHeight = Math.round(fuzzyMembership.low);
+        const mediumHeight = Math.round(fuzzyMembership.medium);
+        const highHeight = Math.round(fuzzyMembership.high);
+
+        const resultsContent = document.getElementById('resultsContent');
+        resultsContent.innerHTML = `
+            <div class="results-container">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <h3 class="mb-2"><i class="fas fa-diagnoses me-2"></i>Diagnosis Results</h3>
+                    <p class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Analysis completed at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                </div>
+                
+                <!-- Main Prediction -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-bullseye me-2"></i>Primary Prediction
+                            </div>
+                            <div class="card-body text-center">
+                                <h4 class="text-primary mb-3">${prediction}</h4>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill bg-success" 
+                                         style="width: ${confidenceScore * 100}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small>0%</small>
+                                    <small><strong>${(confidenceScore * 100).toFixed(1)}% Confidence</strong></small>
+                                    <small>100%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Risk Assessment
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="risk-score-display risk-${riskLevel}">
+                                    ${riskLevel.toUpperCase()}
+                                </div>
+                                <p class="mb-0">
+                                    <strong>Risk Score:</strong> ${riskScore.toFixed(3)}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fuzzy Logic Visualization -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-project-diagram me-2"></i>Fuzzy Logic Analysis
+                    </div>
+                    <div class="card-body">
+                        <div class="fuzzy-chart">
+                            <div class="fuzzy-bar-group">
+                                <div class="fuzzy-value">${fuzzyMembership.low.toFixed(1)}%</div>
+                                <div class="fuzzy-bar low" style="height: ${lowHeight}px"></div>
+                                <div class="fuzzy-label">LOW</div>
+                            </div>
+                            <div class="fuzzy-bar-group">
+                                <div class="fuzzy-value">${fuzzyMembership.medium.toFixed(1)}%</div>
+                                <div class="fuzzy-bar medium" style="height: ${mediumHeight}px"></div>
+                                <div class="fuzzy-label">MEDIUM</div>
+                            </div>
+                            <div class="fuzzy-bar-group">
+                                <div class="fuzzy-value">${fuzzyMembership.high.toFixed(1)}%</div>
+                                <div class="fuzzy-bar high" style="height: ${highHeight}px"></div>
+                                <div class="fuzzy-label">HIGH</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row" style="margin-top: 60px;">
+                            <div class="col-md-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h6 mb-1">Base Risk</div>
+                                    <div class="h4">${(components.base_risk * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h6 mb-1">Symptom Factor</div>
+                                    <div class="h4">${(components.symptom_factor * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h6 mb-1">Severity Factor</div>
+                                    <div class="h4">${(components.severity_factor * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="h6 mb-1">Age Factor</div>
+                                    <div class="h4">${(components.age_factor * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Symptoms Analyzed -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-clipboard-list me-2"></i>Symptoms Analyzed (${symptoms.length})
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            ${symptoms.map((symptom, index) => `
+                                <div class="col-md-4 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span>${symptom}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations -->
+                <div class="recommendations">
+                    <h5><i class="fas fa-lightbulb me-2"></i>Recommendations</h5>
+                    <ul>
+                        ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <!-- Detailed Explanation -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>Analysis Explanation
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-robot me-2"></i>
+                            ${result.explanation || 'No detailed explanation available.'}
+                        </div>
+                        <p class="small text-muted mb-0">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                            This analysis uses fuzzy logic to handle uncertainty in medical diagnosis. 
+                            The system considers multiple factors and their degrees of membership in risk categories.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-4 text-center">
+                    <button class="btn btn-success btn-lg me-3" onclick="saveAnalysis()">
+                        <i class="fas fa-save me-2"></i>Save to Patient Record
+                    </button>
+                    <button class="btn btn-primary btn-lg me-3" onclick="printResults()">
+                        <i class="fas fa-print me-2"></i>Print Report
+                    </button>
+                    <button class="btn btn-outline-secondary btn-lg" onclick="exportResults()">
+                        <i class="fas fa-download me-2"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Scroll to results
+        document.getElementById('resultsCard').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    // Save analysis to patient record
+    function saveAnalysis() {
+        showToast('Analysis saved successfully to patient record', 'success');
+        // In a real implementation, you would make an API call here
+    }
+
+    // Print results
+    function printResults() {
+        const resultsCard = document.getElementById('resultsCard');
+        const originalDisplay = resultsCard.style.display;
+
+        // Ensure results card is visible for printing
+        resultsCard.style.display = 'block';
+
+        // Open print dialog
+        window.print();
+
+        // Restore original display state
+        resultsCard.style.display = originalDisplay;
+    }
+
+    // Export results as PDF
+    function exportResults() {
+        showToast('PDF export feature coming soon!', 'info');
+        // In a real implementation, you would generate a PDF here
+    }
+
+    // Get CSRF token cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" 
+                            data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+        // Show toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        toast.show();
+
+        // Remove toast after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', function () {
+            toastElement.remove();
+        });
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        initializeSymptomTags();
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('symptomsInput');
+        textarea.addEventListener('input', function () {
+            autoResizeTextarea(this);
+        });
+
+        // Update age input when patient is selected
+        document.getElementById('patientSelect').addEventListener('change', function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const patientAge = selectedOption.getAttribute('data-age');
+            if (patientAge && patientAge !== '35') {
+                document.getElementById('patientAge').value = patientAge;
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

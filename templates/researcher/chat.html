@@ -1,0 +1,1755 @@
+<!-- templates/researcher/chat.html -->
+{% extends 'researcher/researcher_base.html' %}
+
+{% block title %}AI Research Assistant - Medical Research System{% endblock %}
+
+{% block page_title %}AI Research Assistant{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-flask me-2"></i>Advanced research support for medical literature, methodology, and data analysis
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Research Chat Container */
+    .research-chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 700px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #f0f2f8;
+    }
+    
+    /* Research Header */
+    .research-header {
+        padding: 20px 25px;
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .research-header h4 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .research-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        margin-left: 15px;
+    }
+    
+    /* Research Messages Container */
+    .research-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 25px;
+        background: linear-gradient(135deg, #f9fafd 0%, #f0f2f8 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    /* Research Message Bubbles */
+    .research-message {
+        max-width: 80%;
+        animation: slideInResearch 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+    }
+    
+    @keyframes slideInResearch {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .research-message.user {
+        align-self: flex-end;
+        margin-left: auto;
+    }
+    
+    .research-message.ai {
+        align-self: flex-start;
+        margin-right: auto;
+    }
+    
+    .research-content {
+        padding: 20px 25px;
+        border-radius: 20px;
+        line-height: 1.7;
+        font-size: 15px;
+        position: relative;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    }
+    
+    .research-message.user .research-content {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        color: white;
+        border-bottom-right-radius: 8px;
+    }
+    
+    .research-message.ai .research-content {
+        background: white;
+        color: #2c3e50;
+        border: 1px solid #e8eaf6;
+        border-bottom-left-radius: 8px;
+        border-left: 4px solid #8E44AD;
+    }
+    
+    /* Research Specific Styling */
+    .research-content.methodology {
+        border-left: 4px solid #3498db;
+        background: linear-gradient(135deg, #f5faff 0%, #ebf5ff 100%);
+    }
+    
+    .research-content.statistics {
+        border-left: 4px solid #e74c3c;
+        background: linear-gradient(135deg, #fff7f7 0%, #ffebeb 100%);
+    }
+    
+    .research-content.literature {
+        border-left: 4px solid #2ecc71;
+        background: linear-gradient(135deg, #f7fff9 0%, #eaf9ef 100%);
+    }
+    
+    .research-content.data-analysis {
+        border-left: 4px solid #f39c12;
+        background: linear-gradient(135deg, #fffbf0 0%, #fff4e0 100%);
+    }
+    
+    /* Research Meta */
+    .research-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 12px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .research-message.ai .research-meta {
+        border-top: 1px solid #e8eaf6;
+        color: #7f8c8d;
+    }
+    
+    .research-model {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(142, 68, 173, 0.1);
+        padding: 4px 12px;
+        border-radius: 15px;
+        color: #8E44AD;
+        font-weight: 500;
+    }
+    
+    /* Research Input Area */
+    .research-input-area {
+        padding: 20px 25px;
+        background: white;
+        border-top: 1px solid #f0f2f8;
+    }
+    
+    .research-textarea {
+        border: 1px solid #d5d9e6;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 15px;
+        resize: none;
+        background: #f9fafd;
+        transition: all 0.3s;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+    
+    .research-textarea:focus {
+        border-color: #8E44AD;
+        box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.15);
+        outline: none;
+        background: white;
+    }
+    
+    /* Research Templates */
+    .research-templates {
+        background: linear-gradient(135deg, #f9fafd 0%, #f0f2f8 100%);
+        border-radius: 12px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e8eaf6;
+    }
+    
+    .research-template-btn {
+        background: white;
+        border: 1px solid #e8eaf6;
+        border-radius: 10px;
+        padding: 12px 15px;
+        margin: 5px;
+        text-align: center;
+        transition: all 0.3s;
+        color: #2c3e50;
+        font-weight: 500;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .research-template-btn:hover {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.2);
+        border-color: transparent;
+    }
+    
+    /* Research Tools */
+    .research-tools {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid #e8eaf6;
+    }
+    
+    .tool-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #5d6d7e;
+    }
+    
+    .tool-item:hover {
+        background: #f9fafd;
+        color: #8E44AD;
+        transform: translateX(5px);
+    }
+    
+    .tool-item i {
+        width: 30px;
+        font-size: 16px;
+    }
+    
+    /* Code Blocks */
+    .code-block {
+        background: #2d3a4b;
+        color: #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        overflow-x: auto;
+        border-left: 4px solid #8E44AD;
+    }
+    
+    .code-block .code-language {
+        color: #8E44AD;
+        font-size: 12px;
+        margin-bottom: 10px;
+        display: block;
+        font-weight: 500;
+    }
+    
+    /* Citation Style */
+    .citation {
+        background: linear-gradient(135deg, #fffbf0 0%, #fff4e0 100%);
+        border-left: 4px solid #f39c12;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-size: 13px;
+    }
+    
+    .citation .citation-title {
+        font-weight: 600;
+        color: #d35400;
+    }
+    
+    /* Statistics Display */
+    .stats-display {
+        background: linear-gradient(135deg, #f5faff 0%, #ebf5ff 100%);
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(52, 152, 219, 0.1);
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Research Sidebar */
+    .research-sidebar {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f2f8;
+        overflow: hidden;
+    }
+    
+    .sidebar-section {
+        padding: 20px;
+        border-bottom: 1px solid #f0f2f8;
+    }
+    
+    .sidebar-section:last-child {
+        border-bottom: none;
+    }
+    
+    /* Research History */
+    .research-history-item {
+        padding: 12px 15px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+        background: #f9fafd;
+    }
+    
+    .research-history-item:hover {
+        background: #f0f2f8;
+        border-left-color: #8E44AD;
+        transform: translateX(3px);
+    }
+    
+    .research-history-item.active {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        color: white;
+        border-left-color: #ff6b6b;
+    }
+    
+    /* Research Status */
+    .research-status {
+        background: linear-gradient(135deg, #f9fafd 0%, #f0f2f8 100%);
+        border-radius: 12px;
+        padding: 15px;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background: rgba(46, 204, 113, 0.1);
+        color: #27ae60;
+        border: 1px solid rgba(46, 204, 113, 0.2);
+    }
+    
+    .status-inactive {
+        background: rgba(231, 76, 60, 0.1);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.2);
+    }
+    
+    /* Research Typing */
+    .research-typing {
+        display: inline-flex;
+        align-items: center;
+        padding: 15px 20px;
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #e8eaf6;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .research-dot {
+        width: 8px;
+        height: 8px;
+        background: #8E44AD;
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: researchPulse 1.4s infinite;
+    }
+    
+    .research-dot:nth-child(2) { animation-delay: 0.2s; }
+    .research-dot:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes researchPulse {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+        30% { transform: translateY(-8px); opacity: 1; }
+    }
+    
+    /* Research Send Button */
+    .research-send-btn {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        border: none;
+        border-radius: 12px;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.3s;
+        margin-left: 10px;
+    }
+    
+    .research-send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+    }
+    
+    /* Empty Research State */
+    .research-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #5d6d7e;
+    }
+    
+    .research-empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        color: #e8eaf6;
+    }
+    
+    /* Research Guidelines */
+    .research-guidelines {
+        background: linear-gradient(135deg, #fffbf0 0%, #fff4e0 100%);
+        border-left: 4px solid #f39c12;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    
+    .guideline-title {
+        color: #d35400;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Research Response Formatting */
+    .research-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+    
+    .research-table th {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        color: white;
+        font-weight: 600;
+        padding: 12px 15px;
+        text-align: left;
+    }
+    
+    .research-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e8eaf6;
+    }
+    
+    .research-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .research-table tr:nth-child(even) {
+        background-color: #f9fafd;
+    }
+    
+    .research-table tr:hover {
+        background-color: #f0f2f8;
+    }
+    
+    /* Lists in research responses */
+    .research-content ul,
+    .research-content ol {
+        padding-left: 20px;
+        margin: 10px 0;
+    }
+    
+    .research-content li {
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+    
+    .research-content li:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Headers in research responses */
+    .research-content h3,
+    .research-content h4,
+    .research-content h5 {
+        margin: 15px 0 10px 0;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    .research-content h3 {
+        font-size: 18px;
+        border-bottom: 2px solid #8E44AD;
+        padding-bottom: 5px;
+    }
+    
+    .research-content h4 {
+        font-size: 16px;
+        color: #3498db;
+    }
+    
+    .research-content h5 {
+        font-size: 15px;
+        color: #2ecc71;
+    }
+    
+    /* Key points highlighting */
+    .key-point {
+        background: linear-gradient(135deg, #fffbf0 0%, #fff4e0 100%);
+        border-left: 4px solid #f39c12;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        font-size: 14px;
+    }
+    
+    .key-point-title {
+        font-weight: 600;
+        color: #d35400;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .key-point-title i {
+        margin-right: 8px;
+    }
+    
+    /* Definition lists */
+    .research-definition {
+        margin: 15px 0;
+        padding: 15px;
+        background: #f9fafd;
+        border-radius: 8px;
+        border-left: 4px solid #3498db;
+    }
+    
+    .research-term {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .research-definition-text {
+        color: #5d6d7e;
+        line-height: 1.6;
+    }
+    
+    /* Quote styling */
+    .research-quote {
+        margin: 20px 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #f9fafd 0%, #f0f2f8 100%);
+        border-left: 5px solid #8E44AD;
+        border-radius: 8px;
+        font-style: italic;
+        position: relative;
+    }
+    
+    .research-quote:before {
+        content: '"';
+        font-size: 60px;
+        color: #8E44AD;
+        opacity: 0.2;
+        position: absolute;
+        top: -15px;
+        left: 10px;
+        font-family: Georgia, serif;
+    }
+    
+    .research-quote-author {
+        text-align: right;
+        font-style: normal;
+        font-weight: 600;
+        color: #7f8c8d;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f5f6fa;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row g-4">
+        <!-- Main Research Chat -->
+        <div class="col-lg-9">
+            <!-- Research Status Bar -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="status-indicator status-active" id="researchConnectionStatus">
+                                        <i class="fas fa-circle me-2"></i>
+                                        Research AI Active
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="fw-bold">Research Assistant</span>
+                                    <small class="text-muted ms-2" id="researchModelDisplay">{{ selected_model }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-purple" onclick="testResearchConnection()">
+                                    <i class="fas fa-plug me-1"></i>Test Connection
+                                </button>
+                                <button class="btn btn-sm btn-outline-purple" onclick="newResearchSession()">
+                                    <i class="fas fa-plus me-1"></i>New Session
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-purple dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-tools"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="exportResearchNotes()">
+                                                <i class="fas fa-file-export me-2"></i>Export Research
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="generateResearchSummary()">
+                                                <i class="fas fa-file-alt me-2"></i>Generate Summary
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#" onclick="clearResearchChat()">
+                                                <i class="fas fa-trash me-2"></i>Clear Session
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Research Tools -->
+            <div class="research-tools mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="tool-item" onclick="researchQuery('methodology', 'Compare cross-sectional vs longitudinal study designs')">
+                            <i class="fas fa-project-diagram text-primary"></i>
+                            <span>Methodology</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tool-item" onclick="researchQuery('statistics', 'Explain when to use ANOVA vs t-test')">
+                            <i class="fas fa-chart-bar text-danger"></i>
+                            <span>Statistics</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tool-item" onclick="researchQuery('literature', 'Recent advances in CRISPR gene editing')">
+                            <i class="fas fa-book text-success"></i>
+                            <span>Literature</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tool-item" onclick="researchQuery('analysis', 'How to handle missing data in clinical trials')">
+                            <i class="fas fa-database text-warning"></i>
+                            <span>Data Analysis</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Research Chat -->
+            <div class="research-chat-container" style="height: 60rem;">
+                <!-- Header -->
+                <div class="research-header">
+                    <div>
+                        <h4>
+                            <i class="fas fa-flask me-2"></i>
+                            Research AI Assistant
+                            <span class="research-badge">
+                                <i class="fas fa-user-graduate me-1"></i>
+                                Research Mode
+                            </span>
+                        </h4>
+                        <small class="opacity-75">
+                            <i class="far fa-clock me-1"></i>
+                            Session: {{ chat_session.title }}
+                        </small>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="citeSources()">
+                                    <i class="fas fa-quote-right me-2"></i>
+                                    Generate Citations
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="formatAPA()">
+                                    <i class="fas fa-paragraph me-2"></i>
+                                    APA Formatting
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="changeResearchModel()">
+                                    <i class="fas fa-exchange-alt me-2"></i>
+                                    Switch AI Model
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Messages Area -->
+                <div class="research-messages" id="researchMessages">
+                    {% if messages %}
+                        {% for msg in messages %}
+                        <div class="research-message {% if msg.message_type == 'user' %}user{% else %}ai{% endif %}">
+                            <div class="research-content 
+                                {% if msg.message_type == 'ai' %}
+                                    {% if 'methodology' in msg.content|lower %}methodology
+                                    {% elif 'statistic' in msg.content|lower or 'p-value' in msg.content|lower %}statistics
+                                    {% elif 'study' in msg.content|lower or 'literature' in msg.content|lower %}literature
+                                    {% elif 'data' in msg.content|lower or 'analysis' in msg.content|lower %}data-analysis
+                                    {% endif %}
+                                {% endif %}">
+                                {{ msg.content|linebreaks }}
+                                <div class="research-meta">
+                                    <span>
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ msg.created_at|time:"H:i" }}
+                                    </span>
+                                    {% if msg.message_type == 'ai' %}
+                                    <span class="research-model">
+                                        <i class="fas fa-microchip me-1"></i>
+                                        {{ selected_model }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="research-empty-state">
+                            <i class="fas fa-flask fa-3x"></i>
+                            <h4 class="mt-4 mb-3">Welcome to Research Assistant</h4>
+                            <p class="text-muted mb-4" style="max-width: 600px; margin: 0 auto;">
+                                This AI assistant specializes in medical research support. 
+                                It can help with study design, statistical analysis, literature reviews, 
+                                data interpretation, and research methodology.
+                            </p>
+                            
+                            <!-- Research Capabilities -->
+                            <div class="research-guidelines">
+                                <div class="guideline-title">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    Research Capabilities
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <small>Statistical analysis guidance</small>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <small>Literature review assistance</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <small>Methodology consultation</small>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <small>Data interpretation support</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Typing Indicator -->
+                    <div id="researchTypingIndicator" style="display: none;">
+                        <div class="research-message ai">
+                            <div class="research-typing">
+                                <span class="research-dot"></span>
+                                <span class="research-dot"></span>
+                                <span class="research-dot"></span>
+                                <span class="ms-3 text-muted fw-500">Analyzing research query...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="research-input-area">
+                    <!-- Research Templates -->
+                    <div class="research-templates">
+                        <div class="mb-2">
+                            <small class="text-muted fw-500">
+                                <i class="fas fa-bolt me-1"></i>
+                                Research Templates:
+                            </small>
+                        </div>
+                        <div>
+                            <button class="research-template-btn" onclick="insertResearchTemplate('methodology', 'Design a randomized controlled trial for testing new drug X')">
+                                <i class="fas fa-clipboard-list me-2"></i>
+                                Study Design
+                            </button>
+                            <button class="research-template-btn" onclick="insertResearchTemplate('statistics', 'Which statistical test for comparing three treatment groups?')">
+                                <i class="fas fa-calculator me-2"></i>
+                                Statistical Test
+                            </button>
+                            <button class="research-template-btn" onclick="insertResearchTemplate('literature', 'Summarize recent meta-analysis on COVID-19 treatments')">
+                                <i class="fas fa-search me-2"></i>
+                                Literature Review
+                            </button>
+                            <button class="research-template-btn" onclick="insertResearchTemplate('analysis', 'Interpret correlation coefficient of 0.75 with p<0.001')">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Data Interpretation
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Research Form -->
+                    <form id="researchChatForm" onsubmit="sendResearchMessage(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="session_id" value="{{ chat_session.id }}">
+                        
+                        <div class="d-flex align-items-end">
+                            <div class="flex-grow-1 me-3">
+                                <textarea class="form-control research-textarea" 
+                                          id="researchMessageInput" 
+                                          rows="3"
+                                          placeholder="Ask about research methodology, statistical analysis, literature review, or data interpretation... (Use Shift+Enter for new line)"
+                                          onkeydown="handleResearchKeyDown(event)"
+                                          oninput="updateResearchCharCount()"></textarea>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="technicalMode" checked>
+                                        <label class="form-check-label small text-muted" for="technicalMode">
+                                            <i class="fas fa-graduation-cap me-1"></i>
+                                            Technical mode (detailed explanations)
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">
+                                        <span id="researchCharCount">0</span>/5000 characters
+                                    </small>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn research-send-btn" id="researchSendButton">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Research Mode Options -->
+                        <div class="row g-2 mt-3">
+                            <div class="col-md-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="researchMode" id="modeBasic" value="basic">
+                                    <label class="form-check-label small" for="modeBasic">Basic</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="researchMode" id="modeAdvanced" value="advanced" checked>
+                                    <label class="form-check-label small" for="modeAdvanced">Advanced</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-sm btn-outline-purple" onclick="attachResearchFile()">
+                                    <i class="fas fa-paperclip me-1"></i>
+                                    Attach Data
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Research Sidebar -->
+        <div class="col-lg-3">
+            <!-- Model Configuration -->
+            <div class="research-sidebar mb-4">
+                <div class="sidebar-section">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-brain me-2 text-purple"></i>
+                        Research AI Model
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label small fw-500">Select Research Model:</label>
+                        <select class="form-select" id="researchModelSelect">
+                            {% for model in available_models %}
+                            <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                                {{ model }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="research-status">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-500">Research Mode</span>
+                            <span id="researchStatusBadge" class="status-indicator status-active">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Active
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-500">Model Complexity</span>
+                            <span class="badge bg-purple">Advanced</span>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-purple w-100" onclick="optimizeResearchModel()">
+                                <i class="fas fa-tachometer-alt me-1"></i>
+                                Optimize Model
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Research History -->
+                <div class="sidebar-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            Research Sessions
+                        </h6>
+                        <span class="badge bg-purple">{{ chat_history.count }}</span>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for session in chat_history %}
+                        <div class="research-history-item {% if session.id == chat_session.id %}active{% endif %}"
+                             onclick="loadResearchSession('{{ session.id }}')">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">{{ session.title|truncatechars:25 }}</h6>
+                                    <p class="mb-0 small">
+                                        <i class="fas fa-message me-1"></i>
+                                        {{ session.messages.count }} exchanges
+                                    </p>
+                                </div>
+                                <small>{{ session.updated_at|date:"M d" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-file-alt fa-2x mb-3"></i>
+                            <p class="small mb-0">No research sessions</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Research Resources -->
+                <div class="sidebar-section">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-book-open me-2 text-purple"></i>
+                        Research Resources
+                    </h6>
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2" 
+                           onclick="researchQuery('resources', 'Latest PubMed search techniques')">
+                            <i class="fas fa-search text-purple me-2"></i>
+                            PubMed Search
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="researchQuery('resources', 'Statistical power calculation methods')">
+                            <i class="fas fa-calculator text-purple me-2"></i>
+                            Power Analysis
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="researchQuery('resources', 'Systematic review PRISMA guidelines')">
+                            <i class="fas fa-clipboard-check text-purple me-2"></i>
+                            Review Guidelines
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 py-2"
+                           onclick="researchQuery('resources', 'Data visualization best practices')">
+                            <i class="fas fa-chart-area text-purple me-2"></i>
+                            Data Visualization
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Research Statistics -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-chart-line me-2 text-purple"></i>
+                        Session Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="stats-display">
+                        <div class="stat-item">
+                            <span class="small">Messages</span>
+                            <span class="fw-bold">{{ messages|length }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="small">Session Duration</span>
+                            <span class="fw-bold">
+                                {% if chat_session.created_at %}
+                                    {{ chat_session.created_at|timesince }}
+                                {% else %}
+                                    New
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="small">AI Model</span>
+                            <span class="fw-bold">{{ selected_model }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="small">Research Mode</span>
+                            <span class="fw-bold text-success">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Research Variables
+let researchSessionId = '{{ chat_session.id }}';
+let researchModel = '{{ selected_model }}';
+
+// Enhanced DOM Management Helper
+function ensureTypingIndicatorInDOM() {
+    const researchMessages = document.getElementById('researchMessages');
+    const typingIndicator = document.getElementById('researchTypingIndicator');
+    
+    if (!typingIndicator) {
+        // Create typing indicator if it doesn't exist
+        const newTypingIndicator = document.createElement('div');
+        newTypingIndicator.id = 'researchTypingIndicator';
+        newTypingIndicator.style.display = 'none';
+        newTypingIndicator.innerHTML = `
+            <div class="research-message ai">
+                <div class="research-typing">
+                    <span class="research-dot"></span>
+                    <span class="research-dot"></span>
+                    <span class="research-dot"></span>
+                    <span class="ms-3 text-muted fw-500">Analyzing research query...</span>
+                </div>
+            </div>
+        `;
+        researchMessages.appendChild(newTypingIndicator);
+    } else if (!researchMessages.contains(typingIndicator)) {
+        // Re-add if it was removed
+        researchMessages.appendChild(typingIndicator);
+    }}
+
+// Initialize Research Chat
+document.addEventListener('DOMContentLoaded', function() {
+    scrollResearchToBottom();
+    setupResearchTextarea();
+    setupResearchEventListeners();
+    updateResearchCharCount();
+    
+    // Ensure typing indicator is in DOM
+    ensureTypingIndicatorInDOM();
+    
+    // Check research connection
+    checkResearchConnection();
+});
+
+// Setup research textarea
+function setupResearchTextarea() {
+    const textarea = document.getElementById('researchMessageInput');
+    textarea.focus();
+    
+    textarea.addEventListener('input', function() {
+        // Auto-resize
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+}
+
+// Setup research event listeners
+function setupResearchEventListeners() {
+    // Model selection
+    document.getElementById('researchModelSelect').addEventListener('change', function() {
+        researchModel = this.value;
+        updateResearchModelDisplay(this.value);
+    });
+    
+    // Research mode selection
+    document.querySelectorAll('input[name="researchMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateResearchMode(this.value);
+        });
+    });
+}
+
+// Add research message with enhanced formatting
+function addResearchMessage(content, type, model = null) {
+    const researchMessages = document.getElementById('researchMessages');
+    const typingIndicator = document.getElementById('researchTypingIndicator');
+    
+    // Check if typing indicator exists in DOM
+    let typingIndicatorExists = false;
+    if (typingIndicator && researchMessages.contains(typingIndicator)) {
+        typingIndicatorExists = true;
+    }
+    
+    // Remove empty state if present
+    const emptyState = document.querySelector('.research-empty-state');
+    if (emptyState) {
+        researchMessages.innerHTML = ''; // Clear everything
+        // Re-add the typing indicator if it was in the DOM
+        if (typingIndicator && typingIndicatorExists) {
+            researchMessages.appendChild(typingIndicator);
+        }
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `research-message ${type}`;
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const modelHtml = model ? 
+        `<span class="research-model"><i class="fas fa-microchip me-1"></i>${model}</span>` : '';
+    
+    // Format content for research with enhanced styling
+    let formattedContent = formatResearchContent(content, type);
+    
+    // Determine content class based on content
+    let contentClass = 'research-content';
+    if (type === 'ai') {
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes('methodology') || lowerContent.includes('design') || lowerContent.includes('protocol')) {
+            contentClass += ' methodology';
+        } else if (lowerContent.includes('statistic') || lowerContent.includes('p-value') || lowerContent.includes('significant')) {
+            contentClass += ' statistics';
+        } else if (lowerContent.includes('study') || lowerContent.includes('literature') || lowerContent.includes('review')) {
+            contentClass += ' literature';
+        } else if (lowerContent.includes('data') || lowerContent.includes('analysis') || lowerContent.includes('interpret')) {
+            contentClass += ' data-analysis';
+        }
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="${contentClass}">
+            ${formattedContent}
+            <div class="research-meta">
+                <span><i class="far fa-clock me-1"></i>${timeString}</span>
+                ${type === 'ai' ? modelHtml : ''}
+            </div>
+        </div>
+    `;
+    
+    // Insert before typing indicator if it exists in DOM
+    if (typingIndicator && researchMessages.contains(typingIndicator)) {
+        researchMessages.insertBefore(messageDiv, typingIndicator);
+    } else {
+        // Otherwise just append to the end
+        researchMessages.appendChild(messageDiv);
+    }
+    
+    scrollResearchToBottom();
+}
+
+// Enhanced research content formatting
+function formatResearchContent(content, type) {
+    let formatted = content;
+    
+    // Preserve newlines
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Format markdown tables
+    formatted = formatMarkdownTables(formatted);
+    
+    // Format lists
+    formatted = formatMarkdownLists(formatted);
+    
+    // Format headers
+    formatted = formatMarkdownHeaders(formatted);
+    
+    // Format code blocks with enhanced detection
+    formatted = formatCodeBlocks(formatted);
+    
+    // Format citations
+    formatted = formatCitations(formatted);
+    
+    // Format statistics
+    formatted = formatStatistics(formatted);
+    
+    // Format key points
+    formatted = formatKeyPoints(formatted);
+    
+    // Format quotes
+    formatted = formatQuotes(formatted);
+    
+    // Format definitions
+    formatted = formatDefinitions(formatted);
+    
+    return formatted;
+}
+
+// Format markdown tables
+function formatMarkdownTables(text) {
+    // Detect simple markdown tables
+    const tableRegex = /(\|[^\n]+\|\s*\n\|[-|:\s]+\|\s*\n(?:\|[^\n]+\|\s*\n)+)/g;
+    
+    return text.replace(tableRegex, (match) => {
+        const rows = match.trim().split('\n').filter(row => row.trim());
+        
+        let tableHtml = '<table class="research-table">';
+        
+        rows.forEach((row, index) => {
+            const cells = row.split('|').filter(cell => cell.trim());
+            
+            if (index === 0) {
+                // Header row
+                tableHtml += '<thead><tr>';
+                cells.forEach(cell => {
+                    tableHtml += `<th>${cell.trim()}</th>`;
+                });
+                tableHtml += '</tr></thead><tbody>';
+            } else if (index === 1 && cells.some(cell => cell.includes('-'))) {
+                // Separator row, skip
+                return;
+            } else {
+                // Data row
+                tableHtml += '<tr>';
+                cells.forEach(cell => {
+                    tableHtml += `<td>${cell.trim()}</td>`;
+                });
+                tableHtml += '</tr>';
+            }
+        });
+        
+        tableHtml += '</tbody></table>';
+        return tableHtml;
+    });
+}
+
+// Format markdown lists
+function formatMarkdownLists(text) {
+    // Format unordered lists
+    text = text.replace(/^[\s]*[-*+]\s+(.+)$/gm, '<li>$1</li>');
+    
+    // Format ordered lists
+    text = text.replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>');
+    
+    // Wrap consecutive list items
+    text = text.replace(/(<li>.*?<\/li>\s*)+/g, (match) => {
+        return '<ul>' + match + '</ul>';
+    });
+    
+    return text;
+}
+
+// Format markdown headers
+function formatMarkdownHeaders(text) {
+    // Format h3 (###)
+    text = text.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    
+    // Format h4 (####)
+    text = text.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    
+    // Format h5 (#####)
+    text = text.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    
+    return text;
+}
+
+// Format code blocks
+function formatCodeBlocks(text) {
+    if (text.includes('```')) {
+        const codeBlocks = text.match(/```[\s\S]*?```/g);
+        if (codeBlocks) {
+            codeBlocks.forEach(block => {
+                const cleanBlock = block.replace(/```/g, '');
+                const language = cleanBlock.split('\n')[0]?.trim() || 'code';
+                const code = cleanBlock.substring(language.length).trim();
+                const highlightedBlock = `
+                    <div class="code-block">
+                        <span class="code-language">${language}</span>
+                        <pre>${escapeHtml(code)}</pre>
+                    </div>
+                `;
+                text = text.replace(block, highlightedBlock);
+            });
+        }
+    }
+    return text;
+}
+
+// Format citations
+function formatCitations(text) {
+    const citationRegex = /(\([A-Z][a-z]+ et al\.?,?\s*\d{4}\))|(\[\d+\])/g;
+    text = text.replace(citationRegex, '<span class="text-success fw-bold">$&</span>');
+    
+    return text;
+}
+
+// Format statistics
+function formatStatistics(text) {
+    const statsRegex = /(p\s*[<>≤≥=]\s*[\d.]+)|([rR]\s*=\s*[\d.-]+)|(OR\s*=\s*[\d.]+)|(CI\s*[\d.,\s-]+)/gi;
+    text = text.replace(statsRegex, '<span class="text-danger fw-bold">$&</span>');
+    
+    return text;
+}
+
+// Format key points
+function formatKeyPoints(text) {
+    // Format key points with bullet or star
+    text = text.replace(/(?:^|\n)(?:[\*•]\s*|Key\s*point\s*:\s*)(.+?)(?=\n\n|\n\*|$)/gi, (match, point) => {
+        return `<div class="key-point">
+                    <div class="key-point-title"><i class="fas fa-star"></i>Key Point</div>
+                    ${point.trim()}
+                </div>`;
+    });
+    
+    return text;
+}
+
+// Format quotes
+function formatQuotes(text) {
+    text = text.replace(/^>\s+(.+)$/gm, (match, quote) => {
+        return `<div class="research-quote">${quote.trim()}</div>`;
+    });
+    
+    return text;
+}
+
+// Format definitions
+function formatDefinitions(text) {
+    text = text.replace(/([A-Z][A-Za-z\s]+):\s+(.+?)(?=\n\n|$)/g, (match, term, definition) => {
+        return `<div class="research-definition">
+                    <div class="research-term">${term.trim()}</div>
+                    <div class="research-definition-text">${definition.trim()}</div>
+                </div>`;
+    });
+    
+    return text;
+}
+
+// Escape HTML for code blocks
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Send research message
+function sendResearchMessage(event) {
+    event.preventDefault();
+    
+    const messageInput = document.getElementById('researchMessageInput');
+    const message = messageInput.value.trim();
+    const sendButton = document.getElementById('researchSendButton');
+    
+    if (!message) {
+        showResearchToast('Please enter your research query', 'warning');
+        return;
+    }
+    
+    if (!researchModel) {
+        showResearchToast('Please select a research model', 'warning');
+        return;
+    }
+    
+    // Disable input
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    // Add user message
+    addResearchMessage(message, 'user');
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    updateResearchCharCount();
+    
+    // Show typing indicator if it exists
+    const typingIndicator = document.getElementById('researchTypingIndicator');
+    if (typingIndicator) {
+        typingIndicator.style.display = 'block';
+    }
+    
+    scrollResearchToBottom();
+    
+    // Prepare research request
+    const requestData = {
+        message: message,
+        session_id: researchSessionId,
+        model: researchModel,
+        technical_mode: document.getElementById('technicalMode').checked,
+        research_mode: document.querySelector('input[name="researchMode"]:checked').value
+    };
+    
+    // Send research request
+    fetch('{% url "researcher_chat_send" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide typing indicator safely
+        const typingIndicator = document.getElementById('researchTypingIndicator');
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+        
+        if (data.success) {
+            // Add AI response with enhanced formatting
+            addResearchMessage(data.ai_response, 'ai', data.model);
+            
+            // Update model if changed
+            if (data.model && data.model !== researchModel) {
+                researchModel = data.model;
+                updateResearchModelDisplay(data.model);
+                document.getElementById('researchModelSelect').value = data.model;
+            }
+        } else {
+            addResearchMessage(`<div class="alert alert-danger p-2 mb-0">Error: ${data.error}</div>`, 'ai');
+        }
+    })
+    .catch(error => {
+        const typingIndicator = document.getElementById('researchTypingIndicator');
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+        addResearchMessage('<div class="alert alert-danger p-2 mb-0">Network error. Please try again.</div>', 'ai');
+    })
+    .finally(() => {
+        // Re-enable input
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        messageInput.focus();
+        scrollResearchToBottom();
+    });
+}
+
+// Research query function
+function researchQuery(type, question) {
+    document.getElementById('researchMessageInput').value = question;
+    document.getElementById('researchMessageInput').dispatchEvent(new Event('input'));
+    document.getElementById('researchMessageInput').focus();
+}
+
+// Insert research template
+function insertResearchTemplate(type, template) {
+    document.getElementById('researchMessageInput').value = template;
+    document.getElementById('researchMessageInput').dispatchEvent(new Event('input'));
+    document.getElementById('researchMessageInput').focus();
+}
+
+// Test research connection
+function testResearchConnection() {
+    const statusBadge = document.getElementById('researchStatusBadge');
+    
+    statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+    statusBadge.className = 'status-indicator';
+    
+    fetch('{% url "test_researcher_ollama_connection" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusBadge.className = 'status-indicator status-active';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Active';
+            showResearchToast('Research connection established!', 'success');
+            
+            // Update models if available
+            if (data.models && data.current_model) {
+                updateResearchModelDropdown(data.models, data.current_model);
+            }
+        } else {
+            statusBadge.className = 'status-indicator status-inactive';
+            statusBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> Inactive';
+            showResearchToast('Connection failed: ' + data.error, 'error');
+        }
+    });
+}
+
+// Check research connection
+function checkResearchConnection() {
+    fetch('{% url "test_researcher_ollama_connection" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusBadge = document.getElementById('researchStatusBadge');
+        if (data.success) {
+            statusBadge.className = 'status-indicator status-active';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Active';
+        } else {
+            statusBadge.className = 'status-indicator status-inactive';
+            statusBadge.innerHTML = '<i class="fas fa-times-circle me-1"></i> Inactive';
+        }
+    });
+}
+
+// Update research model dropdown
+function updateResearchModelDropdown(models, currentModel) {
+    const select = document.getElementById('researchModelSelect');
+    select.innerHTML = '';
+    
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        if (model === currentModel) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+// Update research model display
+function updateResearchModelDisplay(modelName) {
+    document.getElementById('researchModelDisplay').textContent = modelName;
+}
+
+// Update research mode
+function updateResearchMode(mode) {
+    // Can add logic to adjust AI behavior based on mode
+    showResearchToast(`Research mode set to: ${mode}`, 'info');
+}
+
+// Load research session
+function loadResearchSession(sessionId) {
+    window.location.href = `{% url 'researcher_chat' %}?session=${sessionId}`;
+}
+
+// New research session
+function newResearchSession() {
+    if (confirm('Start a new research session?')) {
+        fetch('{% url "researcher_new_chat_session" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            }
+        });
+    }}
+
+// Change research model
+function changeResearchModel() {
+    const modelSelect = document.getElementById('researchModelSelect');
+    modelSelect.focus();
+}
+
+// Optimize research model
+function optimizeResearchModel() {
+    showResearchToast('Optimizing research model settings...', 'info');
+    // Implementation for model optimization
+}
+
+// Export research notes
+function exportResearchNotes() {
+    showResearchToast('Exporting research notes...', 'info');
+    // Implementation for export
+}
+
+// Generate research summary
+function generateResearchSummary() {
+    showResearchToast('Generating research summary...', 'info');
+    // Implementation for summary generation
+}
+
+// Cite sources
+function citeSources() {
+    researchQuery('citations', 'Generate APA citations for recent studies on diabetes treatment');
+}
+
+// Format APA
+function formatAPA() {
+    researchQuery('formatting', 'How to format references in APA 7th edition?');
+}
+
+// Attach research file
+function attachResearchFile() {
+    showResearchToast('File attachment feature coming soon!', 'info');
+}
+
+// Clear research chat
+function clearResearchChat() {
+    if (confirm('Clear all messages in this research session?')) {
+        location.reload();
+    }}
+
+// Handle research key down
+function handleResearchKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendResearchMessage(event);
+    }}
+
+// Update research character count
+function updateResearchCharCount() {
+    const textarea = document.getElementById('researchMessageInput');
+    const charCount = document.getElementById('researchCharCount');
+    charCount.textContent = textarea.value.length;
+    
+    if (textarea.value.length > 5000) {
+        charCount.style.color = '#e74c3c';
+    } else {
+        charCount.style.color = '#666';
+    }}
+
+// Scroll research to bottom
+function scrollResearchToBottom() {
+    const researchMessages = document.getElementById('researchMessages');
+    if (researchMessages) {
+        researchMessages.scrollTop = researchMessages.scrollHeight;
+    }}
+
+// Show research toast notification
+function showResearchToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `research-toast-notification research-toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add research toast styles if not already added
+if (!document.querySelector('#research-toast-styles')) {
+    const toastStyles = document.createElement('style');
+    toastStyles.id = 'research-toast-styles';
+    toastStyles.textContent = `
+        .research-toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .research-toast-notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .research-toast-success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .research-toast-error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .research-toast-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .research-toast-info { background: linear-gradient(135deg, #8E44AD, #9B59B6); }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn-outline-purple {
+            color: #8E44AD;
+            border-color: #8E44AD;
+        }
+        
+        .btn-outline-purple:hover {
+            background-color: #8E44AD;
+            border-color: #8E44AD;
+            color: white;
+        }
+        
+        .bg-purple {
+            background-color: #8E44AD !important;
+        }
+        
+        .text-purple {
+            color: #8E44AD !important;
+        }
+    `;
+    document.head.appendChild(toastStyles);
+}
+</script>
+{% endblock %}

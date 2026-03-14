@@ -1,0 +1,286 @@
+<!-- templates/doctor/schedule.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Schedule - Doctor Portal{% endblock %}
+{% block page_title %}Your Schedule{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-calendar-alt me-1"></i>View and manage your daily schedule
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Date Navigation -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">{{ current_date|date:"F d, Y" }}</h4>
+                    <small class="text-muted">{{ current_date|date:"l" }}</small>
+                </div>
+                <div class="btn-group">
+                    <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-outline-doctor">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                    <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-outline-doctor">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="?date={% now 'Y-m-d' %}" class="btn btn-doctor">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Today's Schedule -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Today's Appointments</span>
+                    <span class="badge bg-doctor">{{ appointments|length }} appointments</span>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                    <div class="timeline">
+                        {% for slot in time_slots %}
+                        <div class="timeline-slot mb-3">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="time-label">{{ slot }}</div>
+                                </div>
+                                <div class="col-md-10">
+                                    {% for appointment in appointments %}
+                                        {% if appointment.appointment_time|time:"H:i" == slot %}
+                                        <div class="appointment-card mb-2 {% if appointment.status == 'confirmed' %}confirmed{% else %}pending{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-bold">{{ appointment.patient.get_full_name|default:appointment.patient.username }}</div>
+                                                    <div class="small text-muted">{{ appointment.reason }}</div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge bg-{{ appointment.status }}">
+                                                        {{ appointment.get_status_display }}
+                                                    </span>
+                                                    <div class="mt-2">
+                                                        <a href="{% url 'doctor_appointment_detail' appointment.appointment_id %}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if slot not in booked_slots %}
+                                    <div class="time-slot-available p-3 text-center">
+                                        <small class="text-muted">Available</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5>No Appointments Today</h5>
+                        <p class="text-muted">You have no scheduled appointments for today.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Week Overview -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">Week Overview</div>
+                <div class="card-body">
+                    <div class="calendar-week">
+                        {% for week_data in week_appointments %}
+                        <div class="calendar-day {% if week_data.date == current_date %}today{% endif %} mb-2">
+                            <div class="calendar-day-header">
+                                {{ week_data.date|date:"D" }}<br>
+                                <strong>{{ week_data.date|date:"d" }}</strong>
+                            </div>
+                            <div class="calendar-events">
+                                {% if week_data.count > 0 %}
+                                <div class="calendar-event">
+                                    {{ week_data.count }} appointment{{ week_data.count|pluralize }}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-2">
+                                    <small class="text-muted">No appointments</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if week_data.date == current_date %}
+                            <div class="text-center mt-2">
+                                <a href="?date={{ week_data.date|date:'Y-m-d' }}" class="btn btn-sm btn-doctor">
+                                    View
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="text-center mt-2">
+                                <a href="?date={{ week_data.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-doctor">
+                                    View
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header">Schedule Statistics</div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-primary">{{ appointments|length }}</div>
+                            <div class="stat-label small">Today's Appointments</div>
+                        </div>
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-success">{{ booked_slots|length }}</div>
+                            <div class="stat-label small">Booked Slots</div>
+                        </div>
+                        <div class="stat-item text-center p-3">
+                            <div class="stat-number text-warning">{{ time_slots|length|add:"-booked_slots|length" }}</div>
+                            <div class="stat-label small">Available Slots</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Time Slot Legend</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="legend-color booked me-2"></div>
+                            <small>Booked Slot</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="legend-color available me-2"></div>
+                            <small>Available Slot</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color today me-2"></div>
+                            <small>Today's Date</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .timeline-slot {
+        border-bottom: 1px solid #eaeaea;
+        padding-bottom: 10px;
+    }
+    
+    .time-label {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    .appointment-card {
+        background: white;
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .appointment-card.confirmed {
+        border-left: 4px solid #27ae60;
+    }
+    
+    .appointment-card.pending {
+        border-left: 4px solid #f39c12;
+    }
+    
+    .time-slot-available {
+        background: #f8f9fa;
+        border: 1px dashed #dee2e6;
+        border-radius: 6px;
+    }
+    
+    .calendar-week {
+        display: grid;
+        gap: 10px;
+    }
+    
+    .calendar-day {
+        border: 1px solid #eaeaea;
+        padding: 10px;
+        border-radius: 8px;
+        background: white;
+    }
+    
+    .calendar-day.today {
+        background: rgba(156, 39, 176, 0.05);
+        border-color: var(--doctor-color);
+    }
+    
+    .calendar-day-header {
+        text-align: center;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: var(--primary-color);
+    }
+    
+    .calendar-event {
+        background: rgba(156, 39, 176, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    
+    .stat-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+    }
+    
+    .legend-color.booked {
+        background: #f8d7da;
+        border: 1px solid #e74c3c;
+    }
+    
+    .legend-color.available {
+        background: #d4edda;
+        border: 1px solid #27ae60;
+    }
+    
+    .legend-color.today {
+        background: rgba(156, 39, 176, 0.1);
+        border: 1px solid var(--doctor-color);
+    }
+</style>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Patient Portal - Medical System{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #3498db;
+            --accent-color: #1abc9c;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #27ae60;
+            --light-bg: #f8f9fa;
+            --dark-bg: #2c3e50;
+            --patient-primary: #3498db;
+            --patient-secondary: #2980b9;
+            --patient-accent: #1abc9c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, var(--patient-primary) 0%, var(--patient-secondary) 100%);
+            color: white;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            box-shadow: 3px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding-top: 20px;
+        }
+
+        .sidebar-brand {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-brand h3 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-brand small {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 15px 25px;
+            margin: 5px 15px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .badge-notification {
+            background: var(--danger-color);
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 280px;
+            padding: 25px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            color: var(--patient-primary);
+            font-size: 28px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .header-title p {
+            color: #666;
+            margin-bottom: 0;
+            font-size: 15px;
+        }
+
+        /* User Info */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--patient-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 2px solid #f0f0f0;
+            padding: 20px 25px;
+            border-radius: 15px 15px 0 0 !important;
+        }
+
+        .card-title {
+            color: var(--patient-primary);
+            font-weight: 600;
+            margin-bottom: 0;
+            font-size: 18px;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .card-icon.primary {
+            background: linear-gradient(135deg, var(--patient-primary), #2980b9);
+        }
+
+        .card-icon.secondary {
+            background: linear-gradient(135deg, var(--patient-accent), #16a085);
+        }
+
+        .card-icon.warning {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .card-icon.success {
+            background: linear-gradient(135deg, var(--success-color), #229954);
+        }
+
+        .card-icon.danger {
+            background: linear-gradient(135deg, var(--danger-color), #c0392b);
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            text-align: center;
+            padding: 30px 25px;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--patient-primary);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Health Indicators */
+        .health-indicator {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--patient-primary);
+        }
+
+        .risk-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .risk-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .risk-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .risk-critical {
+            background: #721c24;
+            color: white;
+        }
+
+        /* Tables */
+        .table-card {
+            overflow: hidden;
+        }
+
+        .dataTable {
+            width: 100% !important;
+        }
+
+        .dataTables_wrapper {
+            padding: 0 20px 20px;
+        }
+
+        .table th {
+            color: var(--patient-primary);
+            font-weight: 600;
+            border-bottom-width: 2px;
+            background-color: #f8f9fa;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 6px 12px;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        .badge-success {
+            background: linear-gradient(135deg, var(--success-color), #229954);
+        }
+
+        .badge-warning {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .badge-danger {
+            background: linear-gradient(135deg, var(--danger-color), #c0392b);
+        }
+
+        .badge-info {
+            background: linear-gradient(135deg, var(--patient-primary), #2980b9);
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--patient-primary), var(--patient-secondary));
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--patient-secondary), #21618c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-outline-primary {
+            color: var(--patient-primary);
+            border: 2px solid var(--patient-primary);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--patient-primary);
+            border-color: var(--patient-primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #229954);
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+            background: #fafafa;
+        }
+
+        .chat-input {
+            border-top: 2px solid #eee;
+            padding: 20px;
+            background: white;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            max-width: 75%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .user-message {
+            margin-left: auto;
+            background: linear-gradient(135deg, var(--patient-primary), var(--patient-secondary));
+            color: white;
+            padding: 15px 20px;
+            border-radius: 20px 20px 5px 20px;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
+        }
+
+        .ai-message {
+            background: white;
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 20px 20px 20px 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eee;
+        }
+
+        /* Forms */
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            border: 2px solid #e1e5eb;
+            padding: 12px 18px;
+            font-size: 15px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--patient-primary);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+        /* Symptom Checker */
+        .symptom-card {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .symptom-card:hover {
+            border-color: var(--patient-primary);
+            background: rgba(52, 152, 219, 0.05);
+            transform: scale(1.02);
+        }
+
+        .symptom-card.selected {
+            border-color: var(--patient-accent);
+            background: rgba(26, 188, 156, 0.1);
+        }
+
+        /* Doctor Cards */
+        .doctor-card {
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .doctor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .doctor-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .main-content {
+                margin-left: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding-top: 20px;
+            }
+
+            .sidebar-brand h3,
+            .sidebar-brand small {
+                display: none;
+            }
+
+            .nav-link span,
+            .nav-link .badge-notification {
+                display: none;
+            }
+
+            .nav-link {
+                padding: 15px;
+                margin: 5px;
+                justify-content: center;
+            }
+
+            .nav-link i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+                padding: 15px;
+            }
+
+            .header {
+                padding: 15px;
+            }
+
+            .header-title h1 {
+                font-size: 22px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--patient-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--patient-secondary);
+        }
+
+        /* Alert Styles */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            border-left: 4px solid var(--patient-primary);
+            color: var(--patient-secondary);
+        }
+
+        /* Progress Bars */
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+
+        .progress-bar {
+            border-radius: 5px;
+            background: linear-gradient(90deg, var(--patient-primary), var(--patient-accent));
+        }
+
+        /* Tooltips */
+        .custom-tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .custom-tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark-bg);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--patient-primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Emergency Button */
+        .emergency-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.3);
+            transition: all 0.3s;
+        }
+
+        .emergency-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <h3><i class="fas fa-heartbeat"></i> Patient Portal</h3>
+            <small>Your Health, Our Priority</small>
+        </div>
+
+        <nav class="nav flex-column mt-3">
+            <a class="nav-link {% if request.path == '/patient/dashboard/' %}active{% endif %}"
+                href="{% url 'patient_dashboard' %}">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a class="nav-link {% if 'chat' in request.path %}active{% endif %}" href="{% url 'patient_chat' %}">
+                <i class="fas fa-robot"></i>
+                <span>Health Assistant</span>
+            </a>
+
+            <a class="nav-link {% if 'medical-history' in request.path %}active{% endif %}"
+                href="{% url 'patient_medical_history' %}">
+                <i class="fas fa-file-medical"></i>
+                <span>Medical History</span>
+            </a>
+
+            <a class="nav-link {% if 'symptom-check' in request.path %}active{% endif %}"
+                href="{% url 'patient_symptom_check' %}">
+                <i class="fas fa-stethoscope"></i>
+                <span>Symptom Checker</span>
+            </a>
+
+            <a class="nav-link {% if 'appointments' in request.path %}active{% endif %}"
+                href="{% url 'patient_appointments' %}">
+                <i class="fas fa-calendar-check"></i>
+                <span>Appointments</span>
+            </a>
+
+            <a class="nav-link {% if 'doctors' in request.path %}active{% endif %}" href="{% url 'patient_doctors' %}">
+                <i class="fas fa-user-md"></i>
+                <span>Find Doctors</span>
+            </a>
+
+            <a class="nav-link {% if 'patient_notifications' in request.path %}active{% endif %}"
+                href="{% url 'patient_notifications' %}">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+                {% if unread_notifications_count and unread_notifications_count > 0 %}
+                <span class="badge-notification">{{ unread_notifications_count }}</span>
+                {% endif %}
+            </a>
+
+            <a class="nav-link {% if 'profile' in request.path %}active{% endif %}" href="{% url 'patient_profile' %}">
+                <i class="fas fa-user-circle"></i>
+                <span>My Profile</span>
+            </a>
+
+            <div class="mt-4 pt-4 border-top border-light">
+                <a class="nav-link text-danger mt-3" href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Patient Status -->
+
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1>{% block page_title %}Patient Dashboard{% endblock %}</h1>
+                <p>{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }}{% endblock %}
+                </p>
+            </div>
+
+            <div class="user-info">
+                <!-- Emergency Button -->
+                <button class="btn emergency-btn me-2" onclick="callEmergency()">
+                    <i class="fas fa-phone-alt me-2"></i>Emergency
+                </button>
+
+                <!-- User Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button"
+                        data-bs-toggle="dropdown">
+                        <div class="user-avatar">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}"
+                                alt="{{ user.get_full_name|default:user.username }}">
+                            {% else %}
+                            {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+                            {% endif %}
+                        </div>
+                        <span class="ms-3 d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i
+                                    class="fas fa-user me-2"></i>My Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'patient_notifications' %}"><i
+                                    class="fas fa-bell me-2"></i>Notifications</a></li>
+                        <li><a class="dropdown-item" href="{% url 'patient_medical_history' %}"><i
+                                    class="fas fa-file-medical me-2"></i>Medical History</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Main Content Block -->
+        <div class="fade-in">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-5 pt-4 border-top text-center text-muted">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h6 class="fw-bold mb-3">Need Help?</h6>
+                    <p class="mb-2"><i class="fas fa-phone me-2"></i>Emergency: 911</p>
+                    <p class="mb-2"><i class="fas fa-headset me-2"></i>Support: 1-800-HEALTH</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6 class="fw-bold mb-3">Quick Links</h6>
+                    <p class="mb-2"><a href="{% url 'patient_symptom_check' %}" class="text-decoration-none">Symptom
+                            Checker</a></p>
+                    <p class="mb-2"><a href="{% url 'patient_doctors' %}" class="text-decoration-none">Find a Doctor</a>
+                    </p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h6 class="fw-bold mb-3">Privacy & Security</h6>
+                    <p class="small mb-2">Your health data is encrypted and secure</p>
+                    <p class="small">HIPAA Compliant</p>
+                </div>
+            </div>
+            <p class="mt-3 small">&copy; 2024 Medical System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Bootstrap & JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Initialize DataTables
+        $(document).ready(function () {
+            $('.dataTable').DataTable({
+                "pageLength": 10,
+                "responsive": true,
+                "language": {
+                    "search": "Search:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "paginate": {
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
+                    }
+                }
+            });
+        });
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function () {
+            $('.alert').alert('close');
+        }, 5000);
+
+        // Emergency call function
+        function callEmergency() {
+            if (confirm('Call emergency services (911)?')) {
+                window.location.href = 'tel:911';
+            }
+        }
+
+        // Update health status color
+        function updateHealthStatus() {
+            const riskLevel = '{{ user.risk_level|default:"low" }}';
+            const statusElement = document.querySelector('.health-status-card .fa-circle');
+
+            if (riskLevel === 'high' || riskLevel === 'critical') {
+                statusElement.classList.add('pulse');
+            } else {
+                statusElement.classList.remove('pulse');
+            }
+        }
+
+        // Initialize on page load
+        $(document).ready(function () {
+            updateHealthStatus();
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

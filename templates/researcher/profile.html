@@ -1,0 +1,802 @@
+<!-- templates/researcher/profile.html -->
+{% extends 'researcher/researcher_base.html' %}
+
+{% block title %}Profile - Medical Research System{% endblock %}
+
+{% block page_title %}Profile Settings{% endblock %}
+{% block page_subtitle %}Manage your researcher profile and preferences{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid white;
+        object-fit: cover;
+    }
+    
+    .profile-stats {
+        display: flex;
+        gap: 30px;
+        margin-top: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: #666;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-right: 5px;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .settings-card {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="Profile" class="profile-avatar">
+                {% else %}
+                <div class="profile-avatar bg-light d-flex align-items-center justify-content-center mx-auto">
+                    <i class="fas fa-user-md fa-3x text-primary"></i>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-9">
+                <h2 class="mb-2">{{ user.get_full_name|default:user.username }}</h2>
+                <p class="mb-1">
+                    <i class="fas fa-building me-2"></i>{{ user.institution|default:"Not specified" }}
+                </p>
+                <p class="mb-3">
+                    <i class="fas fa-flask me-2"></i>{{ user.research_area|default:"General Research" }}
+                </p>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Projects</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">Analyses</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">89%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">2y</div>
+                        <div class="stat-label">Experience</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Tabs -->
+    <ul class="nav nav-tabs mb-4" id="profileTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button">
+                <i class="fas fa-user me-2"></i>Personal Info
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="research-tab" data-bs-toggle="tab" data-bs-target="#research" type="button">
+                <i class="fas fa-flask me-2"></i>Research Profile
+            </button>
+        </li>
+
+
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="profileTabContent">
+        <!-- Personal Info Tab -->
+        <div class="tab-pane fade show active" id="personal" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-id-card me-2"></i>Personal Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">First Name</label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}
+                                        <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Last Name</label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}
+                                        <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email Address</label>
+                                        {{ form.email }}
+                                        {% if form.email.errors %}
+                                        <div class="text-danger small">{{ form.email.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Phone Number</label>
+                                        {{ form.phone }}
+                                        {% if form.phone.errors %}
+                                        <div class="text-danger small">{{ form.phone.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Profile Picture</label>
+                                    {{ form.profile_picture }}
+                                    {% if form.profile_picture.errors %}
+                                    <div class="text-danger small">{{ form.profile_picture.errors }}</div>
+                                    {% endif %}
+                                    {% if user.profile_picture %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">Current: {{ user.profile_picture.name }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Bio</label>
+                                    {{ form.bio }}
+                                    {% if form.bio.errors %}
+                                    <div class="text-danger small">{{ form.bio.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Account Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Username:</strong></td>
+                                    <td>{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Account Type:</strong></td>
+                                    <td><span class="badge bg-primary">Researcher</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Member Since:</strong></td>
+                                    <td>{{ user.date_joined|date:"F j, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Login:</strong></td>
+                                    <td>{{ user.last_login|date:"F j, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Account Status:</strong></td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Activity Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div class="display-6 text-primary mb-2">156</div>
+                                <p class="text-muted">Total Analyses</p>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">This Week:</small>
+                                <div class="progress mt-1" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research Profile Tab -->
+        <div class="tab-pane fade" id="research" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-flask me-2"></i>Research Profile</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {% csrf_token %}
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Institution</label>
+                                        {{ form.institution }}
+                                        {% if form.institution.errors %}
+                                        <div class="text-danger small">{{ form.institution.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Department</label>
+                                        {{ form.department }}
+                                        {% if form.department.errors %}
+                                        <div class="text-danger small">{{ form.department.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Research Area</label>
+                                    {{ form.research_area }}
+                                    {% if form.research_area.errors %}
+                                    <div class="text-danger small">{{ form.research_area.errors }}</div>
+                                    {% endif %}
+                                    <small class="text-muted">e.g., Oncology, Cardiology, Neurology, etc.</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Specializations</label>
+                                    {{ form.specializations }}
+                                    {% if form.specializations.errors %}
+                                    <div class="text-danger small">{{ form.specializations.errors }}</div>
+                                    {% endif %}
+                                    <small class="text-muted">Comma-separated list of your specializations</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Qualifications</label>
+                                    {{ form.qualifications }}
+                                    {% if form.qualifications.errors %}
+                                    <div class="text-danger small">{{ form.qualifications.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Publications/Research</label>
+                                    {{ form.publications }}
+                                    {% if form.publications.errors %}
+                                    <div class="text-danger small">{{ form.publications.errors }}</div>
+                                    {% endif %}
+                                    <small class="text-muted">Links or descriptions of your notable research</small>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Research Profile
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Research Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <h6>Research Focus</h6>
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 40%"></div>
+                                </div>
+                                <small class="text-muted">Clinical Trials</small>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 30%"></div>
+                                </div>
+                                <small class="text-muted">Data Analysis</small>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 20%"></div>
+                                </div>
+                                <small class="text-muted">Methodology</small>
+                            </div>
+                            
+                            <div>
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 10%"></div>
+                                </div>
+                                <small class="text-muted">Other</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-award me-2"></i>Research Badges</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge bg-primary p-2">
+                                    <i class="fas fa-database me-1"></i>Data Expert
+                                </span>
+                                <span class="badge bg-success p-2">
+                                    <i class="fas fa-chart-line me-1"></i>Analyst
+                                </span>
+                                <span class="badge bg-info p-2">
+                                    <i class="fas fa-microscope me-1"></i>Researcher
+                                </span>
+                                <span class="badge bg-warning p-2">
+                                    <i class="fas fa-graduation-cap me-1"></i>Mentor
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="tab-pane fade" id="security" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-key me-2"></i>Change Password</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                For security reasons, password changes must be confirmed via email.
+                            </div>
+                            
+                            <form>
+                                <div class="mb-3">
+                                    <label class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" required>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="logoutDevices">
+                                        <label class="form-check-label" for="logoutDevices">
+                                            Log out from all other devices
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-key me-2"></i>Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Two-Factor Authentication</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6>Two-Factor Authentication</h6>
+                                    <p class="text-muted mb-0">Add an extra layer of security to your account</p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="2faSwitch">
+                                    <label class="form-check-label" for="2faSwitch"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning" id="2faAlert" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Two-factor authentication will be enabled after verification.
+                            </div>
+                            
+                            <button class="btn btn-outline-primary w-100" onclick="setup2FA()">
+                                <i class="fas fa-qrcode me-2"></i>Setup 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Login History</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small>Current Session</small>
+                                        <small class="text-success">Active</small>
+                                    </div>
+                                    <small class="text-muted">Chrome • Windows • {{ user.last_login|date:"M d, H:i" }}</small>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small>Previous Session</small>
+                                        <small class="text-muted">2 days ago</small>
+                                    </div>
+                                    <small class="text-muted">Firefox • Windows • Dec 10, 14:30</small>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small>Mobile App</small>
+                                        <small class="text-muted">5 days ago</small>
+                                    </div>
+                                    <small class="text-muted">iOS • iPhone • Dec 7, 09:15</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Security Alerts</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock me-2"></i>
+                                <strong>Password Age:</strong> 90 days
+                                <br>
+                                <small>Consider changing your password for better security.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preferences Tab -->
+        <div class="tab-pane fade" id="preferences" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-bell me-2"></i>Notification Preferences</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="preferencesForm">
+                                <div class="mb-4">
+                                    <h6>Email Notifications</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailResearch" checked>
+                                        <label class="form-check-label" for="emailResearch">
+                                            Research updates and new data
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailAnalytics" checked>
+                                        <label class="form-check-label" for="emailAnalytics">
+                                            Analysis results and reports
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailSystem">
+                                        <label class="form-check-label" for="emailSystem">
+                                            System notifications and maintenance
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="emailMarketing">
+                                        <label class="form-check-label" for="emailMarketing">
+                                            Newsletter and product updates
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6>In-App Notifications</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="appChat" checked>
+                                        <label class="form-check-label" for="appChat">
+                                            Chat messages and AI responses
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="appData" checked>
+                                        <label class="form-check-label" for="appData">
+                                            New data uploads and exports
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="appAlerts" checked>
+                                        <label class="form-check-label" for="appAlerts">
+                                            Security alerts and warnings
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6>Dashboard Preferences</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Default View</label>
+                                        <select class="form-select" id="defaultView">
+                                            <option value="overview">Overview</option>
+                                            <option value="analytics">Analytics</option>
+                                            <option value="data">Data Explorer</option>
+                                            <option value="chat">AI Assistant</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Refresh Interval</label>
+                                        <select class="form-select" id="refreshInterval">
+                                            <option value="0">Manual refresh</option>
+                                            <option value="30">30 seconds</option>
+                                            <option value="60">1 minute</option>
+                                            <option value="300">5 minutes</option>
+                                            <option value="900">15 minutes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-primary" onclick="savePreferences()">
+                                        <i class="fas fa-save me-2"></i>Save Preferences
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-palette me-2"></i>Appearance</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Theme</label>
+                                <select class="form-select" id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="auto">Auto (System)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Color Scheme</label>
+                                <div class="d-flex gap-2">
+                                    <div class="color-option" style="background: #2c3e50;" onclick="setColorScheme('default')"></div>
+                                    <div class="color-option" style="background: #1a237e;" onclick="setColorScheme('blue')"></div>
+                                    <div class="color-option" style="background: #004d40;" onclick="setColorScheme('green')"></div>
+                                    <div class="color-option" style="background: #4a148c;" onclick="setColorScheme('purple')"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Font Size</label>
+                                <select class="form-select" id="fontSize">
+                                    <option value="small">Small</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                            
+                            <button class="btn btn-outline-secondary w-100" onclick="resetAppearance()">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-language me-2"></i>Language & Region</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Language</label>
+                                <select class="form-select" id="languageSelect">
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="de">Deutsch</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Time Zone</label>
+                                <select class="form-select" id="timezoneSelect">
+                                    <option value="UTC">UTC</option>
+                                    <option value="EST">Eastern Time</option>
+                                    <option value="CST">Central Time</option>
+                                    <option value="PST">Pacific Time</option>
+                                    <option value="GMT">GMT</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Date Format</label>
+                                <select class="form-select" id="dateFormat">
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Color options styling
+document.querySelectorAll('.color-option').forEach(option => {
+    option.style.width = '30px';
+    option.style.height = '30px';
+    option.style.borderRadius = '4px';
+    option.style.cursor = 'pointer';
+    option.style.border = '2px solid #eee';
+});
+
+// Set color scheme
+function setColorScheme(scheme) {
+    document.querySelectorAll('.color-option').forEach(opt => {
+        opt.style.border = '2px solid #eee';
+    });
+    event.target.style.border = '2px solid #3498db';
+    
+    // In a real app, this would update the theme
+    console.log('Color scheme set to:', scheme);
+}
+
+// Setup 2FA
+function setup2FA() {
+    document.getElementById('2faAlert').style.display = 'block';
+    alert('Two-factor authentication setup would begin here. In a real app, this would show a QR code.');
+}
+
+// Save preferences
+function savePreferences() {
+    const preferences = {
+        email: {
+            research: document.getElementById('emailResearch').checked,
+            analytics: document.getElementById('emailAnalytics').checked,
+            system: document.getElementById('emailSystem').checked,
+            marketing: document.getElementById('emailMarketing').checked
+        },
+        app: {
+            chat: document.getElementById('appChat').checked,
+            data: document.getElementById('appData').checked,
+            alerts: document.getElementById('appAlerts').checked
+        },
+        dashboard: {
+            defaultView: document.getElementById('defaultView').value,
+            refreshInterval: document.getElementById('refreshInterval').value
+        },
+        appearance: {
+            theme: document.getElementById('themeSelect').value,
+            fontSize: document.getElementById('fontSize').value,
+            language: document.getElementById('languageSelect').value,
+            timezone: document.getElementById('timezoneSelect').value,
+            dateFormat: document.getElementById('dateFormat').value
+        }
+    };
+    
+    // Send to server
+    
+}
+
+// Reset appearance
+function resetAppearance() {
+    document.getElementById('themeSelect').value = 'light';
+    document.getElementById('fontSize').value = 'medium';
+    document.getElementById('languageSelect').value = 'en';
+    document.getElementById('timezoneSelect').value = 'UTC';
+    document.getElementById('dateFormat').value = 'MM/DD/YYYY';
+    
+    document.querySelectorAll('.color-option').forEach(opt => {
+        opt.style.border = '2px solid #eee';
+    });
+    document.querySelectorAll('.color-option')[0].style.border = '2px solid #3498db';
+}
+
+// Initialize tab functionality
+$(document).ready(function() {
+    // Load saved preferences
+    const savedTab = localStorage.getItem('profileTab');
+    if (savedTab) {
+        const tab = new bootstrap.Tab(document.querySelector(savedTab));
+        tab.show();
+    }
+    
+    // Save tab state
+    document.querySelectorAll('#profileTab button').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function (event) {
+            localStorage.setItem('profileTab', event.target.getAttribute('data-bs-target'));
+        });
+    });
+});
+</script>
+{% endblock %}

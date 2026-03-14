@@ -1,0 +1,99 @@
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Meeting Summary - {{ appointment.patient.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-doctor text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-shield me-2"></i>Encrypted Meeting Minutes
+                    </h5>
+                    <span class="badge bg-light text-doctor">
+                        {{ appointment.appointment_date|date:"M d, Y" }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="user-avatar me-3">
+                            {{ appointment.patient.username|first|upper }}
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ appointment.patient.get_full_name|default:appointment.patient.username
+                                }}</h4>
+                            <p class="text-muted mb-0">Video Consultation ID: {{ appointment.appointment_id }}</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="fas fa-lock me-3 fa-2x"></i>
+                        <div>
+                            <strong>Decryption Successful:</strong> This session's transcript and summary have been
+                            decrypted "just-in-time" in your browser's memory. The raw data remains encrypted in our
+                            database.
+                        </div>
+                    </div>
+
+                    <!-- AI Summary -->
+                    <div class="mb-5">
+                        <h5 class="section-title border-bottom pb-2 mb-3">
+                            <i class="fas fa-robot me-2 text-primary"></i>AI-Generated Summary
+                        </h5>
+                        <div class="bg-light p-4 rounded border-doctor-left">
+                            {% if meeting_data.summary %}
+                            {{ meeting_data.summary|linebreaks }}
+                            {% else %}
+                            <p class="text-muted italic">No summary generated.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Full Transcript -->
+                    <div class="mb-4">
+                        <h5 class="section-title border-bottom pb-2 mb-3">
+                            <i class="fas fa-align-left me-2 text-secondary"></i>Full Decrypted Transcript
+                        </h5>
+                        <div class="transcript-container p-3 border rounded bg-white"
+                            style="max-height: 400px; overflow-y: auto;">
+                            {% if meeting_data.transcript %}
+                            <pre
+                                style="white-space: pre-wrap; font-family: inherit;">{{ meeting_data.transcript }}</pre>
+                            {% else %}
+                            <p class="text-muted italic">No transcript available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <a href="{% url 'doctor_appointment_detail' appointment.appointment_id %}"
+                        class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Appointment
+                    </a>
+                    <div class="text-muted small">
+                        <i class="fas fa-key me-1"></i> Secured with AES-128-CBC
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-doctor-left {
+        border-left: 4px solid #9c27b0;
+    }
+
+    .section-title {
+        color: #444;
+        font-weight: 600;
+    }
+
+    .transcript-container {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #555;
+    }
+</style>
+{% endblock %}

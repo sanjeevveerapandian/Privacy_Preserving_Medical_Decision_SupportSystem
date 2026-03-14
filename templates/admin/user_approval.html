@@ -1,0 +1,300 @@
+<!-- templates/admin/user_approval.html -->
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}User Approval - Medical System Admin{% endblock %}
+{% block page_title %}User Approval Management{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Pending Users Count -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        You have <strong>{{ pending_users.count }}</strong> user(s) pending approval.
+    </div>
+    
+    <!-- Pending Users Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Pending User Approvals</span>
+            <div>
+                <button class="btn btn-success btn-sm" onclick="approveAll()">
+                    <i class="fas fa-check-circle me-1"></i>Approve All
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if pending_users %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User Details</th>
+                            <th>Role</th>
+                            <th>Registration Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in pending_users %}
+                        <tr id="user-row-{{ user.id }}">
+                            <td>#{{ user.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                                        <div class="small text-muted">{{ user.email }}</div>
+                                        <div class="small">{{ user.phone|default:"No phone" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ user.role }}">
+                                    {{ user.get_role_display }}
+                                </span>
+                                {% if user.role == 'doctor' and user.specialization %}
+                                <div class="small mt-1">{{ user.specialization }}</div>
+                                {% endif %}
+                                {% if user.role == 'researcher' and user.institution %}
+                                <div class="small mt-1">{{ user.institution }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-success btn-sm" onclick="approveUser({{ user.id }})" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="rejectUser({{ user.id }})" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <a href="{% url 'admin_user_detail' user.id %}" class="btn btn-info btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5>No Pending Approvals</h5>
+                <p class="text-muted">All users have been processed.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recently Processed -->
+    <div class="card mt-4">
+        <div class="card-header">Recently Processed Users</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-user-check text-success me-2"></i>
+                                Recently Approved (Last 7 days)
+                            </h6>
+                            <div class="mt-3">
+                                {% for user in recently_approved %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div>{{ user.username }}</div>
+                                        <small class="text-muted">{{ user.get_role_display }}</small>
+                                    </div>
+                                    <small>{{ user.updated_at|date:"M d" }}</small>
+                                </div>
+                                {% empty %}
+                                <p class="text-muted">No recent approvals</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-user-times text-danger me-2"></i>
+                                Recently Rejected (Last 7 days)
+                            </h6>
+                            <div class="mt-3">
+                                {% for user in recently_rejected %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div>{{ user.username }}</div>
+                                        <small class="text-muted">{{ user.get_role_display }}</small>
+                                    </div>
+                                    <small>{{ user.updated_at|date:"M d" }}</small>
+                                </div>
+                                {% empty %}
+                                <p class="text-muted">No recent rejections</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function approveUser(userId) {
+        if (confirm('Are you sure you want to approve this user?')) {
+            fetch(`{% url 'approve_user_api' 0 %}`.replace('/0/', `/${userId}/`), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`user-row-${userId}`);
+                    if (row) row.remove();
+                    showToast(data.message || 'User approved successfully!', 'success');
+                    updatePendingCount();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while approving the user.');
+            });
+        }
+    }
+    
+    function rejectUser(userId) {
+        const reason = prompt('Please enter a reason for rejection:', '');
+        if (reason !== null && reason.trim() !== '') {
+            fetch(`{% url 'reject_user_api' 0 %}`.replace('/0/', `/${userId}/`), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({reason: reason})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`user-row-${userId}`);
+                    if (row) row.remove();
+                    showToast(data.message || 'User rejected successfully!', 'warning');
+                    updatePendingCount();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while rejecting the user.');
+            });
+        }
+    }
+    
+    function approveAll() {
+        if (confirm('Are you sure you want to approve all pending users?')) {
+            fetch(`{% url 'approve_all_users_api' %}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'All users approved successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while approving all users.');
+            });
+        }
+    }
+    
+    function updatePendingCount() {
+        // Update the pending count in the alert
+        const alert = document.querySelector('.alert-info strong');
+        if (alert) {
+            const currentCount = parseInt(alert.textContent) || 0;
+            alert.textContent = Math.max(0, currentCount - 1);
+        }
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.position = 'fixed';
+            toastContainer.style.top = '20px';
+            toastContainer.style.right = '20px';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+        
+        const toastId = 'toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast show align-items-center text-white bg-${type} border-0 mb-2`;
+        toast.style.minWidth = '300px';
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById('${toastId}').remove()"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (document.getElementById(toastId)) {
+                document.getElementById(toastId).remove();
+            }
+        }, 3000);
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

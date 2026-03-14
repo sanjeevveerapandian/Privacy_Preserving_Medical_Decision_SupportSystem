@@ -1,0 +1,213 @@
+<!-- templates/doctor/profile.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Profile - Doctor Portal{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-user-md me-1"></i>Manage your professional information and settings
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <!-- Profile Picture -->
+                    <div class="mb-4">
+                        <div class="user-avatar-profile mx-auto mb-3">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="rounded-circle"
+                                style="width: 120px; height: 120px; object-fit: cover;">
+                            {% else %}
+                            <div class="user-avatar-large mx-auto">
+                                {{ user.username|first|upper }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <h3>Dr. {{ user.get_full_name|default:user.username }}</h3>
+                        <p class="text-muted">{{ user.specialization|default:"Medical Doctor" }}</p>
+                        <div class="badge bg-doctor mb-3">{{ user.get_role_display }}</div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="row text-center mb-4">
+                        <div class="col-6 border-end">
+                            <div class="fw-bold text-primary">{{ total_patients|default:0 }}</div>
+                            <div class="small text-muted">Patients</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold text-success">{{ total_records|default:0 }}</div>
+                            <div class="small text-muted">Records</div>
+                        </div>
+                    </div>
+
+                    <!-- Signature Preview -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-start mb-3">Signature Preview</h6>
+                        <div class="p-3 border rounded bg-light text-center"
+                            style="min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                            {% if user.signature %}
+                            <img src="{{ user.signature.url }}" alt="Digital Signature"
+                                style="max-height: 80px; max-width: 100%;">
+                            {% else %}
+                            <div style="font-family: 'Dancing Script', cursive; font-size: 28px; color: #2c3e50;">
+                                Dr. {{ user.get_full_name|default:user.username }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted d-block mt-1">This will appear on medical certificates.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Account Details</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Account Status:</span>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Member Since:</span>
+                        <span>{{ user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Last Login:</span>
+                        <span>{{ user.last_login|timesince }} ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Edit Profile Information</div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <!-- Personal Information -->
+                        <div class="section-title mb-3 h6"><i class="fas fa-user me-2 text-primary"></i>Personal
+                            Information</div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                {{ form.email }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                {{ form.phone }}
+                            </div>
+                        </div>
+
+                        <!-- Professional Information -->
+                        <div class="section-title mb-3 mt-4 pt-3 border-top h6"><i
+                                class="fas fa-briefcase-medical me-2 text-primary"></i>Professional & Clinic Details
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Specialization</label>
+                                {{ form.specialization }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Qualifications</label>
+                                {{ form.qualifications }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">License Number</label>
+                                {{ form.license_number }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Clinic Name</label>
+                                {{ form.clinic_name }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Clinic Address</label>
+                            {{ form.clinic_address }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Professional Biography</label>
+                            {{ form.biography }}
+                        </div>
+
+                        <!-- Signature & Assets -->
+                        <div class="section-title mb-3 mt-4 pt-3 border-top h6"><i
+                                class="fas fa-pen-nib me-2 text-primary"></i>Digital Signature & Picture</div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Signature Image</label>
+                                {{ form.signature }}
+                                <div class="form-text">Transparent PNG recommended.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Profile Picture</label>
+                                {{ form.profile_picture }}
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-doctor px-4">
+                                <i class="fas fa-save me-2"></i>Save Professional Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<style>
+    .user-avatar-profile {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+
+    .user-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5rem;
+        font-weight: bold;
+    }
+
+    .section-title {
+        color: #2c3e50;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+{% endblock %}

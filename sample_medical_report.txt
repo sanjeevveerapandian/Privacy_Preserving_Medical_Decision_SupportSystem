@@ -1,0 +1,28 @@
+CLINICAL CONSULTATION REPORT
+Date: 2026-02-26
+Patient: John Doe
+Date of Birth: 1985-05-15
+
+SUBJECTIVE:
+The patient presents with a 3-day history of acute symptoms. He reports a high fever (101.5 F) accompanied by persistent chills and shivering. He describes a dry, non-productive cough that has worsened over the last 24 hours. Additionally, he reports a severe headache and generalized fatigue that is interfering with daily activities. He also mentions occasional nausea but no vomiting or diarrhea.
+
+PHYSICAL EXAMINATION:
+- Temp: 38.6°C
+- BP: 120/80
+- HR: 88 bpm
+- Respiratory: Clear to auscultation, though patient exhibits mild cough during exam.
+- General: Patient appears tired and mildly dehydrated.
+
+DIAGNOSIS:
+Suspected Influenza infection.
+
+MEDICATIONS:
+1. Oseltamivir 75 mg oral 2 times daily for 5 days
+2. Ibuprofen 400 mg oral 3 times daily as needed for fever and pain
+
+PLAN:
+Patient advised to rest and increase fluid intake. Follow up if symptoms worsen or shortness of breath develops.
+
+Signed,
+Dr. Test Doctor
+General Medicine

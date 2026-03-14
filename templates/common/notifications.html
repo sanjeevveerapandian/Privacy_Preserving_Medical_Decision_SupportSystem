@@ -1,0 +1,586 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Notifications - MedAI{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="page-title">
+        <h1>
+            <i class="fas fa-bell"></i>Notifications
+        </h1>
+        <p>Stay updated with system alerts and messages</p>
+    </div>
+    <div class="header-actions">
+        <button class="mobile-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <a href="{% url 'dashboard_redirect' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Notification Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fas fa-bell"></i>
+        </div>
+        <h3>{{ notifications|length }}</h3>
+        <p>Total</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fas fa-envelope"></i>
+        </div>
+        <h3>{{ unread_count }}</h3>
+        <p>Unread</p>
+        <div class="stat-change {% if unread_count > 0 %}positive{% else %}negative{% endif %}">
+            <i class="fas fa-{% if unread_count > 0 %}arrow-up{% else %}arrow-down{% endif %}"></i>
+            <span>{% if unread_count > 0 %}New notifications{% else %}All read{% endif %}</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <h3>{{ today_count|default:0 }}</h3>
+        <p>Today</p>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>Recent activity</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="fas fa-cog"></i>
+        </div>
+        <h3>100%</h3>
+        <p>System Status</p>
+        <div class="stat-change positive">
+            <i class="fas fa-check"></i>
+            <span>All systems operational</span>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Actions -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-tasks me-2"></i>Quick Actions</h3>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="?mark_all_read=true" class="btn btn-primary">
+                <i class="fas fa-check-double me-2"></i>Mark All as Read
+            </a>
+            <button class="btn btn-danger" onclick="clearAllNotifications()">
+                <i class="fas fa-trash me-2"></i>Clear All
+            </button>
+            <a href="{% url 'notifications_view' %}" class="btn btn-secondary">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </a>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-outline dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-filter me-2"></i>Filter
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?filter=all">All Notifications</a></li>
+                <li><a class="dropdown-item" href="?filter=unread">Unread Only</a></li>
+                <li><a class="dropdown-item" href="?filter=read">Read Only</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="?filter=today">Today</a></li>
+                <li><a class="dropdown-item" href="?filter=week">This Week</a></li>
+                <li><a class="dropdown-item" href="?filter=month">This Month</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications List -->
+<div class="data-table">
+    <div class="table-header">
+        <h3>
+            <i class="fas fa-bell me-2"></i>
+            Notifications
+            {% if unread_count > 0 %}
+            <span class="badge badge-warning">{{ unread_count }} unread</span>
+            {% endif %}
+        </h3>
+        <div class="table-actions">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="notificationSearch" placeholder="Search notifications...">
+            </div>
+        </div>
+    </div>
+    
+    {% if notifications %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Notification</th>
+                    <th>Type</th>
+                    <th>Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notification in notifications %}
+                <tr class="{% if not notification.is_read %}notification-unread{% endif %}" 
+                    data-read="{{ notification.is_read|yesno:'true,false' }}"
+                    data-type="{{ notification.notification_type }}">
+                    <td>
+                        {% if not notification.is_read %}
+                        <span class="badge badge-primary">NEW</span>
+                        {% else %}
+                        <span class="badge badge-secondary">Read</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="max-width: 400px;">
+                            <h6 style="margin-bottom: 5px; color: var(--text-primary);">{{ notification.title }}</h6>
+                            <p style="margin-bottom: 0; color: var(--text-secondary); font-size: 13px;">
+                                {{ notification.message|truncatechars:100 }}
+                            </p>
+                            {% if notification.action_url %}
+                            <small class="text-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>Click to view details
+                            </small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ notification.notification_type }}">
+                            {% if notification.notification_type == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {% elif notification.notification_type == 'success' %}
+                            <i class="fas fa-check-circle me-1"></i>
+                            {% elif notification.notification_type == 'error' %}
+                            <i class="fas fa-times-circle me-1"></i>
+                            {% else %}
+                            <i class="fas fa-info-circle me-1"></i>
+                            {% endif %}
+                            {{ notification.notification_type|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <small style="color: var(--text-light);">
+                            {{ notification.created_at|timesince }} ago
+                        </small>
+                        <br>
+                        <small style="color: var(--text-light); font-size: 11px;">
+                            {{ notification.created_at|date:"M d, Y H:i" }}
+                        </small>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <form method="post" action="{% url 'notifications_view' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                                <button type="submit" class="btn-icon" title="Mark as read">
+                                    <i class="fas fa-check text-success"></i>
+                                </button>
+                            </form>
+                            <button type="button" class="btn-icon" title="View details"
+                                    onclick="viewNotification('{{ notification.id }}')">
+                                <i class="fas fa-eye text-info"></i>
+                            </button>
+                            <form method="post" action="{% url 'notifications_view' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="btn-icon" title="Delete"
+                                        onclick="return confirm('Delete this notification?')">
+                                    <i class="fas fa-trash text-danger"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-header" style="border-top: 1px solid var(--border-color);">
+        <div>
+            <small class="text-muted">
+                Showing {{ notifications|length }} of {{ total_count }} notifications
+            </small>
+        </div>
+        <div class="pagination">
+            <a href="?page={{ previous_page }}" class="page-link {% if not has_previous %}disabled{% endif %}">
+                Previous
+            </a>
+            {% for page_num in page_range %}
+            <a href="?page={{ page_num }}" class="page-link {% if page_num == current_page %}active{% endif %}">
+                {{ page_num }}
+            </a>
+            {% endfor %}
+            <a href="?page={{ next_page }}" class="page-link {% if not has_next %}disabled{% endif %}">
+                Next
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-data">
+        <i class="fas fa-bell-slash"></i>
+        <h4>No Notifications</h4>
+        <p>You're all caught up! No new notifications.</p>
+        <a href="{% url 'dashboard_redirect' %}" class="btn btn-primary mt-3">
+            <i class="fas fa-home me-2"></i>Go to Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Notification Settings -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="fas fa-cog me-2"></i>Notification Settings</h3>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <h5 style="margin-bottom: 15px; color: var(--text-primary);">
+                    <i class="fas fa-envelope me-2"></i>Email Notifications
+                </h5>
+                <div class="mb-3">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailSystem" name="email_system" checked>
+                        <label class="form-check-label" for="emailSystem">
+                            System updates and maintenance
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailSecurity" name="email_security" checked>
+                        <label class="form-check-label" for="emailSecurity">
+                            Security alerts and login attempts
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailAppointments" name="email_appointments">
+                        <label class="form-check-label" for="emailAppointments">
+                            Appointment reminders and updates
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailResearch" name="email_research">
+                        <label class="form-check-label" for="emailResearch">
+                            Research data updates and availability
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="form-group">
+                <h5 style="margin-bottom: 15px; color: var(--text-primary);">
+                    <i class="fas fa-mobile-alt me-2"></i>Push Notifications
+                </h5>
+                <div class="mb-3">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="pushUrgent" name="push_urgent" checked>
+                        <label class="form-check-label" for="pushUrgent">
+                            Urgent alerts and emergencies
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="pushMessages" name="push_messages" checked>
+                        <label class="form-check-label" for="pushMessages">
+                            New messages and chat updates
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="pushAnalysis" name="push_analysis">
+                        <label class="form-check-label" for="pushAnalysis">
+                            Analysis results and reports
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="pushReminders" name="push_reminders">
+                        <label class="form-check-label" for="pushReminders">
+                            Daily reminders and follow-ups
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-moon me-2"></i>Quiet Hours
+                </label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="time" class="form-control" name="quiet_start" value="22:00">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="time" class="form-control" name="quiet_end" value="07:00">
+                    </div>
+                </div>
+                <small class="text-muted">No notifications will be sent during these hours</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
+        <form method="post" action="{% url 'notifications_view' %}">
+            {% csrf_token %}
+            <input type="hidden" name="update_settings" value="true">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Settings
+            </button>
+            <button type="reset" class="btn btn-secondary ms-2">
+                <i class="fas fa-undo me-2"></i>Reset to Defaults
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Notification Preview Modal -->
+<div class="modal fade" id="notificationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="notificationContent"></div>
+                <div class="mt-3" id="notificationTime"></div>
+                {% comment %}
+                <!-- In a real implementation, this would be populated with actual notification data -->
+                <div id="notificationActions" style="display: none;">
+                    <a href="#" class="btn btn-primary btn-sm">View Details</a>
+                    <button class="btn btn-secondary btn-sm ms-2" onclick="markAsRead()">Mark as Read</button>
+                </div>
+                {% endcomment %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="markNotificationRead()">Mark as Read</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+$(document).ready(function() {
+    $('#notificationSearch').on('keyup', function() {
+        const value = $(this).val().toLowerCase();
+        $('table tbody tr').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+    
+    // Mark notification as read on hover with delay
+    $('.notification-unread').hover(function() {
+        const row = $(this);
+        setTimeout(() => {
+            if (row.hasClass('notification-unread')) {
+                const form = row.find('form').first();
+                if (form.length) {
+                    // Submit form to mark as read
+                    form.submit();
+                }
+            }
+        }, 1500); // 1.5 second delay
+    });
+    
+    // Auto-refresh notifications every 60 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 60000);
+});
+
+function clearAllNotifications() {
+    if (confirm('Are you sure you want to clear all notifications? This action cannot be undone.')) {
+        fetch('{% url "notifications_view" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'clear_all'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error clearing notifications: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error clearing notifications');
+        });
+    }}
+
+function viewNotification(notificationId) {
+    // In a real implementation, this would fetch notification details from the server
+    // For now, we'll just show a sample modal
+    const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
+    
+    // Sample data - in real app, fetch from server
+    $('#notificationTitle').text('System Update Notification');
+    $('#notificationContent').html(`
+        <p>This is a detailed view of the notification. In a real implementation, 
+        this would contain the full message content and additional details.</p>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            This is a sample notification preview. Actual implementation would fetch real data.
+        </div>
+    `);
+    $('#notificationTime').html(`
+        <small class="text-muted">
+            <i class="fas fa-clock me-1"></i>
+            Sent 2 hours ago
+        </small>
+    `);
+    
+    modal.show();
+}
+
+function markNotificationRead() {
+    // In real implementation, mark the notification as read via AJAX
+    $('#notificationModal').modal('hide');
+    alert('Notification marked as read (simulated)');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Custom styles for notifications
+$(document).ready(function() {
+    // Add custom styles for notification rows
+    const style = document.createElement('style');
+    style.textContent = `
+        .notification-unread {
+            background-color: rgba(37, 99, 235, 0.05) !important;
+            border-left: 3px solid var(--primary-color) !important;
+        }
+        
+        .notification-unread:hover {
+            background-color: rgba(37, 99, 235, 0.1) !important;
+        }
+        
+        table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        table tbody tr:hover {
+            background-color: var(--light-bg);
+            transform: translateX(2px);
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: var(--warning-color);
+        }
+        
+        .badge-info {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            color: var(--info-color);
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: var(--success-color);
+        }
+        
+        .badge-error {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: var(--danger-color);
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+
+<style>
+/* Custom styles for the notifications page */
+.notification-unread td:first-child {
+    position: relative;
+}
+
+.notification-unread td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.form-check {
+    padding-left: 0;
+    margin-bottom: 15px;
+}
+
+.form-check-input {
+    margin-right: 10px;
+    margin-top: 0.3em;
+}
+
+.form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.btn-outline {
+    background: var(--light-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+    background: white;
+    border-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.dropdown-menu {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+}
+
+.dropdown-item {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.dropdown-item:hover {
+    background-color: var(--light-bg);
+    color: var(--primary-color);
+}
+</style>
+{% endblock %}

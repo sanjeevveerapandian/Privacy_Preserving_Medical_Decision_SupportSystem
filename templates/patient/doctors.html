@@ -1,0 +1,510 @@
+{% extends 'patient_base.html' %}
+
+{% block title %}Find Doctors - Patient Portal{% endblock %}
+
+{% block page_title %}Find Doctors{% endblock %}
+{% block page_subtitle %}Browse and connect with healthcare professionals{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Search and Filters -->
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h6>
+            </div>
+            <div class="card-body">
+                <!-- Search -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Search</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="doctorSearch" 
+                               placeholder="Search doctors...">
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Specialization -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Specialization</label>
+                    <select class="form-select" id="specializationFilter">
+                        <option value="">All Specializations</option>
+                        <option value="cardiology">Cardiology</option>
+                        <option value="dermatology">Dermatology</option>
+                        <option value="neurology">Neurology</option>
+                        <option value="pediatrics">Pediatrics</option>
+                        <option value="orthopedics">Orthopedics</option>
+                        <option value="psychiatry">Psychiatry</option>
+                        <option value="general">General Practice</option>
+                        <option value="emergency">Emergency Medicine</option>
+                    </select>
+                </div>
+                
+                <!-- Availability -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Availability</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="availableToday" checked>
+                        <label class="form-check-label small" for="availableToday">
+                            Available Today
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="acceptingNewPatients" checked>
+                        <label class="form-check-label small" for="acceptingNewPatients">
+                            Accepting New Patients
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="telemedicine">
+                        <label class="form-check-label small" for="telemedicine">
+                            Telemedicine Available
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Rating -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Minimum Rating</label>
+                    <div class="star-rating">
+                        <div class="d-flex gap-1">
+                            {% for i in "12345"|make_list %}
+                            <i class="fas fa-star text-warning rating-star" data-rating="{{ i }}"></i>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted mt-1 d-block" id="ratingText">Any rating</small>
+                    </div>
+                </div>
+                
+                <!-- Reset Filters -->
+                <button class="btn btn-outline-secondary w-100" id="resetFiltersBtn">
+                    <i class="fas fa-redo me-2"></i>Reset Filters
+                </button>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Quick Stats</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Doctors</span>
+                    <span class="fw-bold">{{ total_doctors }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Online Now</span>
+                    <span class="fw-bold text-success">{{ doctors|length|divisibleby:3|default:total_doctors|add:"-2" }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Average Rating</span>
+                    <span class="fw-bold">4.5 <i class="fas fa-star text-warning"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Doctors List -->
+    <div class="col-md-8 col-lg-9 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-md me-2"></i>Available Doctors
+                    <small class="text-muted ms-2">({{ doctors|length }} found)</small>
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort me-2"></i>Sort By
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-sort="rating">Highest Rating</a></li>
+                        <li><a class="dropdown-item" href="#" data-sort="availability">Availability</a></li>
+                        <li><a class="dropdown-item" href="#" data-sort="experience">Experience</a></li>
+                        <li><a class="dropdown-item" href="#" data-sort="name">Name (A-Z)</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if doctors %}
+                <div class="row" id="doctorsList">
+                    {% for doctor in doctors %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="doctor-card">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <!-- Doctor Avatar -->
+                                        <div class="flex-shrink-0">
+                                            {% if doctor.profile_picture %}
+                                            <img src="{{ doctor.profile_picture.url }}" 
+                                                 class="doctor-avatar" 
+                                                 alt="Dr. {{ doctor.get_full_name|default:doctor.username }}">
+                                            {% else %}
+                                            <div class="doctor-avatar d-flex align-items-center justify-content-center" 
+                                                 style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; font-size: 24px;">
+                                                {{ doctor.get_full_name|default:doctor.username|slice:":1"|upper }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Doctor Info -->
+                                        <div class="flex-grow-1 ms-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h5 class="mb-1">Dr. {{ doctor.get_full_name|default:doctor.username }}</h5>
+                                                    <span class="badge badge-info">{{ doctor.specialization|default:"General Practice" }}</span>
+                                                </div>
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-circle fa-xs"></i> Available
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Rating -->
+                                            <div class="mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="text-warning me-2">
+                                                        {% for i in "12345"|make_list %}
+                                                        <i class="fas fa-star{% if forloop.counter <= 4 %} text-warning{% else %} text-muted{% endif %} fa-xs"></i>
+                                                        {% endfor %}
+                                                    </div>
+                                                    <span class="small">4.5 (128 reviews)</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Details -->
+                                            <div class="doctor-details small text-muted mb-3">
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <span><i class="fas fa-graduation-cap me-1"></i> {{ doctor.years_experience|default:"5" }}+ years</span>
+                                                    <span><i class="fas fa-users me-1"></i> {{ doctor.patient_count|default:"500" }}+ patients</span>
+                                                    <span><i class="fas fa-video me-1"></i> Telemedicine</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Actions -->
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'patient_book_appointment'  %}" 
+                                                   class="btn btn-sm btn-primary flex-grow-1">
+                                                    <i class="fas fa-calendar-plus me-2"></i>Book Appointment
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-primary view-profile" 
+                                                        data-doctor-id="{{ doctor.id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success message-doctor" 
+                                                        data-doctor-id="{{ doctor.id }}">
+                                                    <i class="fas fa-comment"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-md fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">No Doctors Found</h5>
+                    <p class="text-muted mb-4">Try adjusting your search filters.</p>
+                    <button class="btn btn-outline-primary" id="resetFiltersBtn2">
+                        <i class="fas fa-redo me-2"></i>Reset Filters
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Doctor Profile Modal -->
+<div class="modal fade" id="doctorProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Doctor Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="doctorProfileContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="bookFromProfileBtn">
+                    <i class="fas fa-calendar-plus me-2"></i>Book Appointment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        let currentDoctorId = null;
+        let minRating = 0;
+        
+        // Rating stars
+        $('.rating-star').on('click', function() {
+            const rating = $(this).data('rating');
+            minRating = rating;
+            
+            // Update stars
+            $('.rating-star').each(function() {
+                const starRating = $(this).data('rating');
+                if (starRating <= rating) {
+                    $(this).addClass('text-warning');
+                    $(this).removeClass('text-muted');
+                } else {
+                    $(this).removeClass('text-warning');
+                    $(this).addClass('text-muted');
+                }
+            });
+            
+            // Update text
+            $('#ratingText').text(`${rating}+ stars`);
+            
+            // Filter doctors
+            filterDoctors();
+        });
+        
+        // Search
+        $('#doctorSearch').on('input', function() {
+            filterDoctors();
+        });
+        
+        // Filter changes
+        $('#specializationFilter, #availableToday, #acceptingNewPatients, #telemedicine').on('change', function() {
+            filterDoctors();
+        });
+        
+        // Reset filters
+        $('#resetFiltersBtn, #resetFiltersBtn2').on('click', function() {
+            $('#doctorSearch').val('');
+            $('#specializationFilter').val('');
+            $('#availableToday').prop('checked', true);
+            $('#acceptingNewPatients').prop('checked', true);
+            $('#telemedicine').prop('checked', false);
+            
+            // Reset rating
+            minRating = 0;
+            $('.rating-star').removeClass('text-muted').addClass('text-warning');
+            $('#ratingText').text('Any rating');
+            
+            filterDoctors();
+        });
+        
+        // Sort doctors
+        $('[data-sort]').on('click', function(e) {
+            e.preventDefault();
+            const sortBy = $(this).data('sort');
+            sortDoctors(sortBy);
+        });
+        
+        // View doctor profile
+        $('.view-profile').on('click', function() {
+            const doctorId = $(this).data('doctor-id');
+            loadDoctorProfile(doctorId);
+        });
+        
+        // Book from profile
+        $('#bookFromProfileBtn').on('click', function() {
+            if (currentDoctorId) {
+                window.location.href = `/patient/book-appointment/${currentDoctorId}/`;
+            }
+        });
+        
+        // Message doctor
+        $('.message-doctor').on('click', function() {
+            const doctorId = $(this).data('doctor-id');
+            alert(`Messaging feature coming soon for doctor ${doctorId}`);
+            // In production, this would open a chat interface
+        });
+        
+        function filterDoctors() {
+            const searchTerm = $('#doctorSearch').val().toLowerCase();
+            const specialization = $('#specializationFilter').val().toLowerCase();
+            const availableToday = $('#availableToday').is(':checked');
+            const acceptingNew = $('#acceptingNewPatients').is(':checked');
+            const telemedicine = $('#telemedicine').is(':checked');
+            
+            $('.col-lg-6').each(function() {
+                const doctorCard = $(this);
+                const doctorName = doctorCard.find('h5').text().toLowerCase();
+                const doctorSpecialization = doctorCard.find('.badge-info').text().toLowerCase();
+                const isAvailable = doctorCard.find('.bg-success').length > 0;
+                const rating = 4.5; // Default rating for demo
+                
+                let matches = true;
+                
+                // Search term
+                if (searchTerm && !doctorName.includes(searchTerm)) {
+                    matches = false;
+                }
+                
+                // Specialization
+                if (specialization && !doctorSpecialization.includes(specialization)) {
+                    matches = false;
+                }
+                
+                // Rating
+                if (minRating > 0 && rating < minRating) {
+                    matches = false;
+                }
+                
+                // Availability (demo - always true for available doctors)
+                if (availableToday && !isAvailable) {
+                    matches = false;
+                }
+                
+                // Show/hide based on matches
+                doctorCard.toggle(matches);
+            });
+            
+            // Update count
+            const visibleCount = $('.col-lg-6:visible').length;
+            $('.card-title small').text(`(${visibleCount} found)`);
+        }
+        
+        function sortDoctors(sortBy) {
+            const container = $('#doctorsList');
+            const items = container.children('.col-lg-6').toArray();
+            
+            items.sort(function(a, b) {
+                const aCard = $(a);
+                const bCard = $(b);
+                
+                switch(sortBy) {
+                    case 'rating':
+                        const aRating = parseFloat(aCard.find('.small span').text().split(' ')[0]);
+                        const bRating = parseFloat(bCard.find('.small span').text().split(' ')[0]);
+                        return bRating - aRating;
+                        
+                    case 'experience':
+                        const aExp = parseInt(aCard.find('.doctor-details span:first').text().match(/\d+/)[0]);
+                        const bExp = parseInt(bCard.find('.doctor-details span:first').text().match(/\d+/)[0]);
+                        return bExp - aExp;
+                        
+                    case 'name':
+                        const aName = aCard.find('h5').text();
+                        const bName = bCard.find('h5').text();
+                        return aName.localeCompare(bName);
+                        
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Re-append sorted items
+            items.forEach(item => container.append(item));
+        }
+        
+        function loadDoctorProfile(doctorId) {
+            currentDoctorId = doctorId;
+            
+            // In a real implementation, this would be an AJAX call
+            // For now, we'll show a demo profile
+            const demoProfile = `
+                <div class="doctor-profile">
+                    <div class="text-center mb-4">
+                        <div class="doctor-avatar mx-auto mb-3" style="width: 120px; height: 120px;">
+                            <i class="fas fa-user-md fa-3x" style="line-height: 120px;"></i>
+                        </div>
+                        <h3>Dr. Demo Doctor</h3>
+                        <p class="text-muted mb-2">Cardiology Specialist</p>
+                        <div class="d-flex justify-content-center gap-3 mb-3">
+                            <span class="badge badge-success">
+                                <i class="fas fa-circle fa-xs"></i> Available Now
+                            </span>
+                            <span class="badge badge-info">Accepting New Patients</span>
+                            <span class="badge badge-warning">Telemedicine Available</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-graduation-cap me-2"></i>Education</h6>
+                            <ul class="small">
+                                <li>MD, Harvard Medical School</li>
+                                <li>Board Certified in Cardiology</li>
+                                <li>Fellowship: Johns Hopkins Hospital</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-award me-2"></i>Experience</h6>
+                            <ul class="small">
+                                <li>15+ years of experience</li>
+                                <li>Chief of Cardiology (2018-2023)</li>
+                                <li>5000+ successful procedures</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6><i class="fas fa-star me-2"></i>Ratings & Reviews</h6>
+                        <div class="alert alert-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="display-6 fw-bold">4.8</span>
+                                    <div class="text-warning">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0"><strong>328</strong> reviews</p>
+                                    <small class="text-muted">98% patient satisfaction</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6><i class="fas fa-clock me-2"></i>Availability</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="alert alert-success small">
+                                    <strong>Today:</strong> 9:00 AM - 5:00 PM<br>
+                                    <strong>Next Available:</strong> 2:30 PM
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info small">
+                                    <strong>Telemedicine Hours:</strong><br>
+                                    Mon-Fri: 8:00 AM - 8:00 PM<br>
+                                    Sat: 10:00 AM - 4:00 PM
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6><i class="fas fa-file-medical me-2"></i>Specializations</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge badge-primary">Heart Disease</span>
+                            <span class="badge badge-primary">Hypertension</span>
+                            <span class="badge badge-primary">Cardiac Surgery</span>
+                            <span class="badge badge-primary">Preventive Cardiology</span>
+                            <span class="badge badge-primary">Heart Failure</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            $('#doctorProfileContent').html(demoProfile);
+            $('#doctorProfileModal').modal('show');
+        }
+        
+        // Initial filter
+        filterDoctors();
+    });
+</script>
+{% endblock %}
+{% endblock %}

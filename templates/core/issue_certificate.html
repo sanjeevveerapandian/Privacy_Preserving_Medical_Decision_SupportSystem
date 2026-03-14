@@ -1,0 +1,77 @@
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Issue Medical Certificate - {{ patient.full_name|default:patient.username }}{% endblock %}
+{% block page_title %}Medical Certificate{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-certificate me-1"></i>Issuing for {{ patient.full_name|default:patient.username }}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Certificate Details</span>
+                <span class="badge bg-light text-primary border">Patient ID: #{{ patient.id }}</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-user me-2"></i>Patient: <strong>{{ patient.full_name|default:patient.username }}</strong>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Diagnosis / Reason</label>
+                            {{ form.diagnosis }}
+                            <div class="form-text">Clearly state the illness or reason for clinical treatment.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Treatment From</label>
+                            {{ form.treatment_from }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Treatment To</label>
+                            {{ form.treatment_to }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Rest Advised From</label>
+                            {{ form.rest_advised_from }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Rest Advised To</label>
+                            {{ form.rest_advised_to }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Fit to Resume Duty From</label>
+                            {{ form.fit_to_resume_date }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Issued Date</label>
+                            {{ form.issued_date }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Additional Advice</label>
+                            {{ form.additional_advice }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <a href="{% url 'doctor_patient_detail' patient.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-doctor px-4">
+                            <i class="fas fa-save me-1"></i>Generate Certificate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

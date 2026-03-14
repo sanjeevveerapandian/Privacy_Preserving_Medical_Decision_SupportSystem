@@ -1,0 +1,419 @@
+[
+  {
+    "timestamp": "2026-02-03T14:20:54.249658",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T14:23:56.078540",
+    "action": "EMR_DOWNLOAD",
+    "role": "doctor",
+    "details": {
+      "document_id": "3d6ca797-9102-4adc-87fe-6b308e69e526",
+      "filename": "Example-of-the-report-entered-into-the-patients-EMR-after-completion-of-the-evaluation.png"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T14:34:35.320879",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T14:40:56.403745",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:05:52.799738",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:19:16.218697",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "58b94059-9ac4-4c58-b376-b6782eb88b38",
+      "document_type": "Lab Report"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:19:20.013172",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "9f1cb861-8661-4da2-9467-3f809f98aacc",
+      "document_type": "Lab Report"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:19:23.400629",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "e1427236-8204-4a79-a13d-90796380eb80",
+      "document_type": "Lab Report"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:19:27.113104",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "3d6ca797-9102-4adc-87fe-6b308e69e526",
+      "document_type": "Lab Report"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:19:58.467383",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:21:50.753190",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "0659fea2-d8f1-44c3-a42a-c24c70396dde",
+      "document_type": "Other"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:22:27.921827",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:29:29.324851",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:30:35.417294",
+    "action": "EMR_DOWNLOAD",
+    "role": "doctor",
+    "details": {
+      "document_id": "56325e97-deca-4e46-83dc-9dacdaf809ee",
+      "filename": "Example-of-the-report-entered-into-the-patients-EMR-after-completion-of-the-evaluation.png"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:46:18.539694",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "56325e97-deca-4e46-83dc-9dacdaf809ee",
+      "document_type": "Other"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:46:21.350872",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "c6de3c6d-009b-468b-ad0a-decebd8f63b6",
+      "document_type": "Lab Report"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T15:46:36.380604",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:02:02.530133",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "prescription",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:05:14.511997",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "prescription",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:19:32.943711",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "prescription",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:21:40.574062",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "9d7d0965-2c9d-486d-9a5b-18f049db1b9b",
+      "document_type": "Prescription"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:21:43.905066",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "300a64ec-5889-4cd0-9f08-14f64765ccfb",
+      "document_type": "Prescription"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:21:47.441087",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "16158ea0-927e-4e1f-847a-b1faac04efc5",
+      "document_type": "Other"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:21:50.940184",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "15723ee2-8477-44e7-a6ca-cc1b3b83dde1",
+      "document_type": "Prescription"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:22:07.546806",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:28:17.921090",
+    "action": "EMR_PROCESS",
+    "role": "doctor",
+    "details": {
+      "document_id": "31c725e1-c9fd-4aa5-93d2-95681aecb378",
+      "text_length": 1426,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:31:50.495995",
+    "action": "EMR_PREDICTION",
+    "role": "doctor",
+    "details": {
+      "document_id": "31c725e1-c9fd-4aa5-93d2-95681aecb378",
+      "prediction": "No specific condition",
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:35:15.615793",
+    "action": "EMR_DOWNLOAD",
+    "role": "doctor",
+    "details": {
+      "document_id": "31c725e1-c9fd-4aa5-93d2-95681aecb378",
+      "filename": "Example-of-the-report-entered-into-the-patients-EMR-after-completion-of-the-evaluation.png"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:41:13.590025",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:43:54.453814",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "prescription",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:53:37.102212",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "discharge_summary",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:56:54.263284",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-03T16:58:41.187051",
+    "action": "EMR_DELETE",
+    "role": "doctor",
+    "details": {
+      "document_id": "1d696435-9663-4d08-8668-fdb1e35ec58e",
+      "document_type": "Prescription"
+    }
+  },
+  {
+    "timestamp": "2026-02-03T17:01:07.009721",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-04T04:44:36.908957",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "lab_report",
+      "patient_id": "5",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-04T04:47:34.673559",
+    "action": "EMR_UPLOAD",
+    "role": "doctor",
+    "details": {
+      "document_type": "other",
+      "patient_id": "4",
+      "auto_extract": true,
+      "success": true
+    }
+  },
+  {
+    "timestamp": "2026-02-09T08:47:39.249000",
+    "action": "ML_PREDICTION",
+    "role": "doctor",
+    "details": {
+      "prediction": "8",
+      "risk_level": "Low"
+    }
+  },
+  {
+    "timestamp": "2026-02-09T08:48:22.987172",
+    "action": "ML_PREDICTION",
+    "role": "doctor",
+    "details": {
+      "prediction": "8",
+      "risk_level": "Low"
+    }
+  },
+  {
+    "timestamp": "2026-02-09T08:50:08.597177",
+    "action": "ML_PREDICTION",
+    "role": "doctor",
+    "details": {
+      "prediction": "0",
+      "risk_level": "Low"
+    }
+  },
+  {
+    "timestamp": "2026-02-09T08:54:52.479773",
+    "action": "ML_PREDICTION",
+    "role": "doctor",
+    "details": {
+      "prediction": "0",
+      "risk_level": "Low"
+    }
+  },
+  {
+    "timestamp": "2026-02-26T17:47:13.231174",
+    "action": "ML_PREDICTION",
+    "role": "system",
+    "details": {
+      "prediction": "8",
+      "confidence": 0.47,
+      "symptoms": [
+        "nausea",
+        "cough",
+        "joint_pain",
+        "high_fever",
+        "fatigue",
+        "headache"
+      ]
+    }
+  }
+]

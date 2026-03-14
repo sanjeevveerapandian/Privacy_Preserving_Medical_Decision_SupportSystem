@@ -1,0 +1,528 @@
+<!-- core/templates/core/view_emr_document.html -->
+{% extends 'doctor/doctor_base.html' %}
+{% load static %}
+
+{% block title %}Medical System - Document Details{% endblock %}
+{% block page_title %}Document: {{ document.get_document_type_display }}{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-clipboard me-1"></i>View and analyze medical document details
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Document Header -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-clipboard-check me-2"></i>Document Information
+                        </h6>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{% url 'download_emr_document' document.document_id %}"
+                            class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download me-1"></i>Download
+                        </a>
+                        {% if not document.is_processed and EMR_SERVICE_AVAILABLE %}
+                        <button onclick="processDocument('{{ document.document_id }}')"
+                            class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-cogs me-1"></i>Process
+                        </button>
+                        {% endif %}
+                        <button onclick="generatePrediction('{{ document.document_id }}')"
+                            class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-stethoscope me-1"></i>Predict
+                        </button>
+                        {% if request.user == document.patient %}
+                        <a href="{% url 'delete_emr_document' document.document_id %}"
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Are you sure you want to delete this document?');">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </a>
+                        {% elif request.user.is_admin %}
+                        <a href="{% url 'delete_emr_document' document.document_id %}"
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Are you sure you want to delete this document?');">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </a>
+                        {% elif request.user == document.created_by %}
+                        <a href="{% url 'delete_emr_document' document.document_id %}"
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Are you sure you want to delete this document?');">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">Document Type:</th>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-file-medical me-1"></i>
+                                            {{ document.get_document_type_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Patient:</th>
+                                    <td>
+                                        <i class="fas fa-user-injured me-2"></i>
+                                        {{ document.patient.full_name }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Uploaded By:</th>
+                                    <td>
+                                        <i class="fas fa-user-md me-2"></i>
+                                        {{ document.created_by.get_full_name }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Document Date:</th>
+                                    <td>
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        {{ document.document_date|date:"F d, Y" }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">File Name:</th>
+                                    <td>
+                                        <i class="fas fa-file me-2"></i>
+                                        {{ document.original_filename }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>File Size:</th>
+                                    <td>
+                                        <i class="fas fa-weight me-2"></i>
+                                        {{ document.file_size|filesizeformat }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Upload Date:</th>
+                                    <td>
+                                        <i class="fas fa-clock me-2"></i>
+                                        {{ document.upload_date|date:"F d, Y H:i" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        {% if document.processing_status == 'processed' %}
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-check-circle me-1"></i>Processed
+                                        </span>
+                                        {% elif document.processing_status == 'processing' %}
+                                        <span class="badge badge-warning">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>Processing
+                                        </span>
+                                        {% elif document.processing_status == 'failed' %}
+                                        <span class="badge badge-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Failed
+                                        </span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">
+                                            <i class="fas fa-clock me-1"></i>Pending
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processed Data & Predictions -->
+    <!-- Processed Data & Predictions -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- AI Diagnostic Analysis Results -->
+            {% if document.document_type == 'mri' or document.document_type == 'xray' %}
+            <div class="card shadow mb-4 border-left-info">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-stethoscope me-2"></i>AI Diagnostic Analysis
+                    </h6>
+                    {% if document.ai_status == 'Processing' or document.ai_status == 'Pending' %}
+                    <span class="badge badge-warning animate-pulse">
+                        <i class="fas fa-spinner fa-spin me-1"></i>Processing
+                    </span>
+                    {% elif document.ai_status == 'Completed' %}
+                    <span class="badge badge-success">
+                        <i class="fas fa-check-circle me-1"></i>Completed
+                    </span>
+                    {% elif document.ai_status == 'Failed' %}
+                    <span class="badge badge-danger">
+                        <i class="fas fa-times-circle me-1"></i>Failed
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if document.ai_status == 'Completed' %}
+                    <div class="row align-items-center mb-4">
+                        {% with p=document.ai_prediction|lower %}
+                        <div class="col-md-6">
+                            <h4
+                                class="fw-bold {% if 'normal' in p or 'notumor' in p %}text-success{% elif 'pneumonia' in p or 'meningioma' in p or 'pituitary' in p %}text-warning{% else %}text-danger{% endif %} mb-1">
+                                {{ document.ai_prediction|title }}
+                            </h4>
+                            <p class="text-muted small mb-0">AI Classification</p>
+                        </div>
+                        {% endwith %}
+                        <div class="col-md-6 text-end">
+                            <h4 class="fw-bold text-primary mb-1">{{ document.ai_confidence|floatformat:2 }}%</h4>
+                            <p class="text-muted small mb-0">Confidence Score</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="alert {% with p=document.ai_prediction|lower %}{% if 'normal' in p or 'notumor' in p %}alert-success{% elif 'pneumonia' in p or 'meningioma' in p or 'pituitary' in p %}alert-warning{% else %}alert-danger{% endif %}{% endwith %} border-0 shadow-sm">
+                        <div class="d-flex">
+                            <i
+                                class="fas {% with p=document.ai_prediction|lower %}{% if 'normal' in p or 'notumor' in p %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %}{% endwith %} fa-2x me-3"></i>
+                            <div>
+                                <h6 class="alert-heading fw-bold">Analysis Summary</h6>
+                                <p class="mb-0 small">{{ document.get_ai_summary }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Visualization (Heatmap or BBox Overlay) -->
+                    {% if document.ai_heatmap %}
+                    <div class="mt-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-image me-2"></i>AI Diagnostic Visualization
+                            <small class="text-muted fw-normal ms-2">(Visualizing detected abnormalities)</small>
+                        </h6>
+                        <div class="heatmap-container position-relative rounded overflow-hidden shadow-sm text-center">
+                            <img src="{{ document.ai_heatmap.url }}" class="img-fluid rounded shadow-sm"
+                                style="max-height: 500px;" alt="AI Visualization">
+                            <div class="heatmap-overlay">
+                                <small class="bg-dark text-white px-2 py-1 rounded-pill opacity-75">
+                                    AI Insight Overlay
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4 p-3 bg-light rounded border">
+                        <small class="text-muted d-block">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Clinical Disclaimer:</strong> This AI result is for clinical decision support only
+                            and must be reviewed by a licensed medical professional.
+                        </small>
+                    </div>
+
+                    {% elif document.ai_status == 'Processing' or document.ai_status == 'Pending' %}
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5>AI is Analyzing...</h5>
+                        <p class="text-muted">The smart diagnostic engine is currently analyzing the scan using both
+                            pneumonia and fracture detection models.</p>
+                        <script>
+                            setTimeout(function () { location.reload(); }, 5000);
+                        </script>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                        <h6>AI Analysis Unavailable</h6>
+                        <p class="text-muted small">There was an issue processing this scan. Please try uploading again.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Extracted Medical Data -->
+            {% if extracted_data.diagnoses or extracted_data.symptoms or extracted_data.medications %}
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-search me-2"></i>Extracted Medical Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Diagnoses -->
+                    {% if extracted_data.diagnoses %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fas fa-diagnoses me-2"></i>Diagnoses
+                        </h6>
+                        <div class="row">
+                            {% for diagnosis in extracted_data.diagnoses|slice:":6" %}
+                            <div class="col-md-6 mb-2">
+                                <div class="border-start border-3 border-primary ps-3 py-1">
+                                    <small>{{ diagnosis }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Medications -->
+                    {% if extracted_data.medications %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fas fa-pills me-2"></i>Medications
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Dosage</th>
+                                        <th>Frequency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for med in extracted_data.medications|slice:":5" %}
+                                    <tr>
+                                        <td><small>{{ med.name }}</small></td>
+                                        <td><small>{{ med.dosage }}</small></td>
+                                        <td><span class="badge bg-info">{{ med.frequency }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Predictions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-stethoscope me-2"></i>Medical Predictions
+                    </h6>
+                    {% if EMR_SERVICE_AVAILABLE %}
+                    <button onclick="generatePrediction('{{ document.document_id }}')" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus me-1"></i>New Prediction
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if predictions %}
+                    {% for pred_data in predictions %}
+                    <div class="prediction-card border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ pred_data.prediction.predicted_conditions|join:", " }}</h6>
+                                <small class="text-muted"><i class="fas fa-clock me-1"></i>{{
+                                    pred_data.prediction.created_at|date:"F d, Y H:i" }}</small>
+                            </div>
+                            <span
+                                class="badge {% if pred_data.prediction.risk_level == 'Critical' %}badge-critical{% elif pred_data.prediction.risk_level == 'High' %}badge-high{% elif pred_data.prediction.risk_level == 'Medium' %}badge-medium{% else %}badge-low{% endif %}">
+                                {{ pred_data.prediction.risk_level }}
+                            </span>
+                        </div>
+                        {% if pred_data.has_confidence %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-bold">Confidence Score</small>
+                                <small class="fw-bold text-primary">{{ pred_data.confidence_display }}</small>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar {% if pred_data.confidence_percentage >= 80 %}bg-success{% elif pred_data.confidence_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                    role="progressbar" style="width: {{ pred_data.confidence_percentage }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-stethoscope fa-3x text-gray-300 mb-3"></i>
+                        <h6 class="text-muted mb-2">No Predictions Yet</h6>
+                        <p class="text-muted small">Generate AI-powered predictions from this document's content</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tools me-2"></i>Document Tools</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        {% if EMR_SERVICE_AVAILABLE %}
+                        <div class="col-md-6"><button onclick="processDocument('{{ document.document_id }}')"
+                                class="btn btn-outline-warning w-100" {% if document.is_processed %}disabled{% endif
+                                %}><i class="fas fa-cogs me-1"></i>{% if document.is_processed %}Already Processed{%
+                                else %}Process Document{% endif %}</button></div>
+                        <div class="col-md-6"><button onclick="generatePrediction('{{ document.document_id }}')"
+                                class="btn btn-outline-success w-100"><i class="fas fa-brain me-1"></i>AI
+                                Analysis</button></div>
+                        {% endif %}
+                        <div class="col-md-6"><a href="{% url 'download_emr_document' document.document_id %}"
+                                class="btn btn-outline-primary w-100"><i class="fas fa-download me-1"></i>Download</a>
+                        </div>
+                        <div class="col-md-6"><a href="{% url 'emr_dashboard' %}"
+                                class="btn btn-outline-secondary w-100"><i class="fas fa-arrow-left me-1"></i>Back to
+                                List</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        top: 6px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .timeline-content {
+        padding-left: 10px;
+    }
+
+    .prediction-card {
+        transition: all 0.3s;
+    }
+
+    .prediction-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .5;
+        }
+    }
+
+    .heatmap-container {
+        border: 1px solid #e3e6f0;
+        background: #f8f9fc;
+    }
+
+    .heatmap-overlay {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+</style>
+
+<script>
+    // Process document
+    function processDocument(documentId) {
+        if (confirm('Process this document to extract medical information?')) {
+            fetch(`/emr/process/${documentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Document processed successfully!', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error: ' + data.error, 'danger');
+                    }
+                })
+                .catch(error => {
+                    showToast('Error: ' + error, 'danger');
+                });
+        }
+    }
+
+    // Generate prediction
+    function generatePrediction(documentId) {
+        if (confirm('Generate medical prediction from this document?')) {
+            fetch(`/emr/predict/${documentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(
+                            `Prediction generated: ${data.prediction} (Confidence: ${data.confidence_display})`,
+                            'success'
+                        );
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error: ' + data.error, 'danger');
+                    }
+                })
+                .catch(error => {
+                    showToast('Error: ' + error, 'danger');
+                });
+        }
+    }
+
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

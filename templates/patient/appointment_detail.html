@@ -1,0 +1,806 @@
+<!-- templates/patient/appointment_detail.html -->
+{% extends 'patient_base.html' %}
+{% load static %}
+
+
+{% block title %}Appointment Details - Patient Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .appointment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+
+    .status-badge {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+
+    .detail-card {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .detail-card-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .detail-card-body {
+        padding: 20px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .info-value {
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .doctor-avatar-lg {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-btn {
+        min-width: 120px;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #0d6efd;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        border: 3px solid white;
+    }
+
+    .timeline-item.completed::before {
+        background-color: #198754;
+    }
+
+    .timeline-item.cancelled::before {
+        background-color: #dc3545;
+    }
+
+    .qr-code {
+        width: 150px;
+        height: 150px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .map-container {
+        height: 200px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+    .urgent-badge {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.7;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .print-only {
+        display: none;
+    }
+
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        .appointment-header {
+            background: none !important;
+            color: black !important;
+            border: 2px solid #000;
+        }
+
+        .detail-card {
+            border: 1px solid #000;
+            break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<!-- Appointment Header -->
+<div class="appointment-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-2">
+                Appointment with Dr. {{ doctor.get_full_name }}
+                {% if appointment.is_urgent %}
+                <span class="badge bg-danger urgent-badge ms-2">URGENT</span>
+                {% endif %}
+            </h2>
+            <p class="mb-0">
+                <i class="far fa-calendar-alt me-2"></i>
+                {{ appointment.appointment_date|date:"l, F d, Y" }}
+                at {{ appointment.appointment_time|time:"g:i A" }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="status-badge 
+                {% if appointment.status == 'confirmed' %}bg-success
+                {% elif appointment.status == 'pending' %}bg-warning
+                {% elif appointment.status == 'completed' %}bg-info
+                {% elif appointment.status == 'cancelled' %}bg-secondary
+                {% else %}bg-danger{% endif %}">
+                {{ appointment.get_status_display|upper }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Basic Information -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Appointment Information</h5>
+            </div>
+            <div class="detail-card-body">
+                <div class="info-row">
+                    <span class="info-label">Appointment ID</span>
+                    <span class="info-value">{{ appointment.appointment_id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date & Time</span>
+                    <span class="info-value">
+                        {{ appointment.appointment_date|date:"F d, Y" }}
+                        at {{ appointment.appointment_time|time:"g:i A" }}
+                        ({{ appointment.duration_minutes }} minutes)
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Type</span>
+                    <span class="info-value">{{ appointment.get_appointment_type_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">
+                        <span class="badge 
+                            {% if appointment.status == 'confirmed' %}bg-success
+                            {% elif appointment.status == 'pending' %}bg-warning
+                            {% elif appointment.status == 'completed' %}bg-info
+                            {% elif appointment.status == 'cancelled' %}bg-secondary
+                            {% else %}bg-danger{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created On</span>
+                    <span class="info-value">{{ appointment.created_at|date:"M d, Y h:i A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Last Updated</span>
+                    <span class="info-value">{{ appointment.updated_at|date:"M d, Y h:i A" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reason & Symptoms -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Medical Details</h5>
+            </div>
+            <div class="detail-card-body">
+                {% if appointment.reason %}
+                <div class="mb-4">
+                    <h6>Reason for Appointment</h6>
+                    <p class="mb-0">{{ appointment.reason }}</p>
+                </div>
+                {% endif %}
+
+                {% if appointment.symptoms %}
+                <div class="mb-4">
+                    <h6>Symptoms Reported</h6>
+                    <p class="mb-0">{{ appointment.symptoms }}</p>
+                </div>
+                {% endif %}
+
+                {% if appointment.notes %}
+                <div>
+                    <h6>Doctor's Notes</h6>
+                    <p class="mb-0">{{ appointment.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Appointment Timeline -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Appointment Timeline</h5>
+            </div>
+            <div class="detail-card-body">
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <h6>Appointment Requested</h6>
+                        <p class="text-muted small mb-0">{{ appointment.created_at|date:"F d, Y h:i A" }}</p>
+                        <p class="mb-0">You requested an appointment with Dr. {{ doctor.get_full_name }}</p>
+                    </div>
+
+                    {% if appointment.status != 'pending' %}
+                    <div
+                        class="timeline-item {% if appointment.status == 'cancelled' %}cancelled{% else %}completed{% endif %}">
+                        <h6>Appointment {{ appointment.get_status_display|title }}</h6>
+                        <p class="text-muted small mb-0">{{ appointment.updated_at|date:"F d, Y h:i A" }}</p>
+                        <p class="mb-0">
+                            {% if appointment.status == 'confirmed' %}
+                            Your appointment has been confirmed by the doctor
+                            {% elif appointment.status == 'cancelled' %}
+                            This appointment has been cancelled
+                            {% elif appointment.status == 'rejected' %}
+                            This appointment request was rejected
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if appointment.status == 'confirmed' %}
+                    <div class="timeline-item">
+                        <h6>Upcoming Appointment</h6>
+                        <p class="text-muted small mb-0">{{ appointment.appointment_date|date:"F d, Y" }} at {{
+                            appointment.appointment_time|time:"g:i A" }}</p>
+                        <p class="mb-0">Your appointment is scheduled</p>
+                        <div class="alert alert-info mt-2 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Please arrive 10 minutes before your scheduled time.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Doctor Information -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Doctor Information</h5>
+            </div>
+            <div class="detail-card-body text-center">
+                <div class="mb-3">
+                    {% if doctor.profile_picture %}
+                    <img src="{{ doctor.profile_picture.url }}" alt="Dr. {{ doctor.get_full_name }}"
+                        class="doctor-avatar-lg mb-3">
+                    {% else %}
+                    <div
+                        class="doctor-avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto">
+                        <i class="fas fa-user-md fa-3x"></i>
+                    </div>
+                    {% endif %}
+                    <h4 class="mb-1">Dr. {{ doctor.get_full_name }}</h4>
+                    <p class="text-muted mb-3">{{ doctor.specialization|default:"General Practitioner" }}</p>
+
+                    <div class="mb-3">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-star me-1"></i> 4.8
+                        </span>
+                        <span class="badge bg-info">
+                            <i class="fas fa-user-friends me-1"></i> 245 Patients
+                        </span>
+                    </div>
+                </div>
+
+                <div class="text-start">
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ doctor.email }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value">{{ doctor.phone|default:"Not provided" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Experience</span>
+                        <span class="info-value">{{ doctor.years_of_experience|default:"Not specified" }} years</span>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="messageDoctor()">
+                        <i class="fas fa-envelope me-2"></i> Send Message
+                    </button>
+                    <a href="{% url 'patient_book_appointment_with_doctor' doctor.id %}"
+                        class="btn btn-outline-success w-100">
+                        <i class="fas fa-calendar-plus me-2"></i> Book Another
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- Actions Panel -->
+        {% if appointment.status == 'pending' or appointment.status == 'confirmed' %}
+        <div class="detail-card no-print">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+            </div>
+            <div class="detail-card-body">
+                <div class="d-grid gap-2">
+                    {% if appointment.status == 'pending' %}
+                    <button class="btn btn-outline-danger action-btn" onclick="cancelAppointment()">
+                        <i class="fas fa-times me-2"></i> Cancel Request
+                    </button>
+                    <button class="btn btn-outline-primary action-btn" onclick="rescheduleAppointment()">
+                        <i class="fas fa-clock me-2"></i> Reschedule
+                    </button>
+                    {% elif appointment.status == 'confirmed' %}
+                    <button class="btn btn-outline-danger action-btn" onclick="cancelAppointment()">
+                        <i class="fas fa-times me-2"></i> Cancel Appointment
+                    </button>
+                    {% if appointment.meeting_link %}
+                    <a href="{{ appointment.meeting_link }}" target="_blank" class="btn btn-outline-success action-btn">
+                        <i class="fas fa-video me-2"></i> Join Virtual Visit
+                    </a>
+                    {% else %}
+                    <button class="btn btn-outline-secondary action-btn" disabled>
+                        <i class="fas fa-video-slash me-2"></i> Virtual Visit Not Ready
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-outline-primary action-btn" onclick="addToCalendar()">
+                        <i class="fas fa-calendar-plus me-2"></i> Add to Calendar
+                    </button>
+                    {% endif %}
+
+                    {% if appointment.status == 'completed' %}
+                    <button class="btn btn-outline-success action-btn" onclick="viewMedicalRecord()">
+                        <i class="fas fa-file-medical me-2"></i> View Medical Record
+                    </button>
+                    <button class="btn btn-outline-primary action-btn" onclick="leaveReview()">
+                        <i class="fas fa-star me-2"></i> Leave Review
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Important Notes -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Important Notes</h5>
+            </div>
+            <div class="detail-card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Arrive 10 minutes before appointment
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Bring your ID and insurance card
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        List all medications you're taking
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Wear comfortable clothing
+                    </li>
+                    {% if appointment.is_urgent %}
+                    <li class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        <strong>URGENT:</strong> This appointment has been marked as urgent
+                    </li>
+                    {% endif %}
+                    {% if appointment.status == 'cancelled' %}
+                    <li class="mb-2">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        This appointment has been cancelled
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this appointment?</p>
+                <div class="mb-3">
+                    <label class="form-label">Cancellation Reason (Optional)</label>
+                    <textarea class="form-control" id="cancelReason" rows="3"
+                        placeholder="Please provide a reason for cancellation..."></textarea>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% if appointment.status == 'confirmed' %}
+                    Cancellations less than 24 hours before the appointment may be subject to fees.
+                    {% else %}
+                    This appointment request will be cancelled immediately.
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Appointment</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancel()">Yes, Cancel Appointment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reschedule Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">New Date</label>
+                    <input type="date" class="form-control" id="newDate" min="{{ today|date:'Y-m-d' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Time</label>
+                    <select class="form-select" id="newTime">
+                        <option value="">Select Time</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="09:30">9:30 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="10:30">10:30 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="11:30">11:30 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="12:30">12:30 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="13:30">1:30 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="14:30">2:30 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="15:30">3:30 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="16:30">4:30 PM</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reschedule Reason (Optional)</label>
+                    <textarea class="form-control" id="rescheduleReason" rows="2"
+                        placeholder="Please provide a reason for rescheduling..."></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    The doctor will need to approve the new appointment time.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmReschedule()">Request Reschedule</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cancel appointment
+    function cancelAppointment() {
+        const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+        modal.show();
+    }
+
+    function confirmCancel() {
+        const reason = document.getElementById('cancelReason').value;
+
+        fetch(`/patient/appointments/{{ appointment.appointment_id }}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Something went wrong. Please try again.', 'error');
+            });
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
+        modal.hide();
+    }
+
+    // Reschedule appointment
+    function rescheduleAppointment() {
+        const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+        modal.show();
+    }
+
+    function confirmReschedule() {
+        const newDate = document.getElementById('newDate').value;
+        const newTime = document.getElementById('newTime').value;
+        const reason = document.getElementById('rescheduleReason').value;
+
+        if (!newDate || !newTime) {
+            showAlert('Please select both date and time', 'error');
+            return;
+        }
+
+        fetch(`/patient/appointments/{{ appointment.appointment_id }}/reschedule/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                date: newDate,
+                time: newTime,
+                reason: reason
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Something went wrong. Please try again.', 'error');
+            });
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('rescheduleModal'));
+        modal.hide();
+    }
+
+    // Other action functions
+    function messageDoctor() {
+        showAlert('Message feature coming soon!', 'info');
+    }
+
+    function saveQRCode() {
+        showAlert('QR code saved to your device', 'success');
+    }
+
+    function shareAppointment() {
+        if (navigator.share) {
+            navigator.share({
+                title: 'My Medical Appointment',
+                text: `Appointment with Dr. {{ doctor.get_full_name }} on {{ appointment.appointment_date|date:"F d, Y" }} at {{ appointment.appointment_time|time:"g:i A" }}`,
+                url: window.location.href
+            })
+                .then(() => console.log('Successfully shared'))
+                .catch(error => console.error('Error sharing:', error));
+        } else {
+            showAlert('Sharing not supported on this device', 'info');
+        }
+    }
+
+    function getDirections() {
+        const address = encodeURIComponent(`{% if doctor.clinic_address %}{{ doctor.clinic_address }}{% else %}123 Medical Center Drive, Healthcare City{% endif %}`);
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
+    }
+
+    function callClinic() {
+        const phone = '{{ doctor.phone|default:"+1-555-123-4567" }}';
+        window.location.href = `tel:${phone}`;
+    }
+
+    function joinVirtualVisit() {
+        showAlert('Virtual visit feature coming soon!', 'info');
+    }
+
+    function addToCalendar() {
+        // Create calendar event
+        const event = {
+            title: 'Appointment with Dr. {{ doctor.get_full_name }}',
+            description: '{{ appointment.reason|default:"Medical appointment" }}',
+            location: '{% if doctor.clinic_address %}{{ doctor.clinic_address }}{% else %}Medical Clinic{% endif %}',
+            startTime: '{{ appointment.appointment_date|date:"Y-m-d" }}T{{ appointment.appointment_time|time:"H:i:s" }}',
+            endTime: '{{ appointment.appointment_date|date:"Y-m-d" }}T{{ appointment.end_time|default:appointment.appointment_time|time:"H:i:s" }}'
+        };
+
+        // Create .ics file
+        const icsContent = `
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Medical Portal//Appointment Calendar//EN
+BEGIN:VEVENT
+UID:{{ appointment.appointment_id }}
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTSTART:${event.startTime.replace(/[-:]/g, '')}
+DTEND:${event.endTime.replace(/[-:]/g, '')}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description}
+LOCATION:${event.location}
+END:VEVENT
+END:VCALENDAR
+        `;
+
+        // Download .ics file
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `appointment-{{ appointment.appointment_id }}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showAlert('Calendar event downloaded. Import it to your calendar app.', 'success');
+    }
+
+    function viewMedicalRecord() {
+        showAlert('Medical record view feature coming soon!', 'info');
+    }
+
+    function leaveReview() {
+        showAlert('Review feature coming soon!', 'info');
+    }
+
+    // Utility functions
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+
+        alertDiv.innerHTML = `
+            <strong>${type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Info'}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    // Countdown timer for upcoming appointments
+    {% if appointment.status == 'confirmed' and appointment.appointment_date|date:"Y-m-d" >= today|date:"Y-m-d" %}
+    function updateCountdown() {
+        const appointmentDate = new Date('{{ appointment.appointment_date|date:"Y-m-d" }}T{{ appointment.appointment_time|time:"H:i:s" }}');
+        const now = new Date();
+        const diff = appointmentDate - now;
+
+        if (diff > 0) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            let countdownText = '';
+            if (days > 0) {
+                countdownText = `${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                countdownText = `${hours} hour${hours > 1 ? 's' : ''}, ${minutes} minute${minutes > 1 ? 's' : ''}`;
+            } else {
+                countdownText = `${minutes} minute${minutes > 1 ? 's' : ''}`;
+            }
+
+            // Update countdown display if it exists
+            const countdownEl = document.getElementById('countdownTimer');
+            if (countdownEl) {
+                countdownEl.textContent = countdownText;
+            }
+        }
+    }
+
+    // Update countdown every minute
+    setInterval(updateCountdown, 60000);
+    updateCountdown(); // Initial call
+    {% endif %}
+</script>
+{% endblock %}

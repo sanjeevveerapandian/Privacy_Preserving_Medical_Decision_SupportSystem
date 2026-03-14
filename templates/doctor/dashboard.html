@@ -1,0 +1,372 @@
+<!-- templates/doctor/dashboard.html -->
+{% extends 'doctor/doctor_base.html' %}
+
+{% block title %}Doctor Dashboard - Medical System{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+{% block page_subtitle %}
+<i class="fas fa-chart-line me-1"></i>Your medical practice at a glance
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon patients">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value">{{ total_patients }}</div>
+                <div class="stat-label">Total Patients</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon high-risk">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value">{{ high_risk_patients }}</div>
+                <div class="stat-label">High Risk Patients</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon analysis">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="stat-value">{{ recent_analyses }}</div>
+                <div class="stat-label">Recent Analyses</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon chats">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="stat-value">{{ pending_appointments }}</div>
+                <div class="stat-label">Pending Appointments</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Patients List -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Patients</span>
+                    <a href="{% url 'doctor_patients' %}" class="btn btn-doctor btn-sm">
+                        <i class="fas fa-user-plus me-1"></i>View All Patients
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Last Visit</th>
+                                    <th>Risk Level</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for patient in patients %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-3" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                                                {{ patient.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ patient.get_full_name|default:patient.username }}</div>
+                                                <div class="small text-muted">{{ patient.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if patient.last_analysis %}
+                                        {{ patient.last_analysis|date:"M d, Y" }}
+                                        {% else %}
+                                        <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ patient.risk_level|default:'low' }}">
+                                            {{ patient.get_risk_level_display|default:"Not assessed" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if patient.last_analysis %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'doctor_patient_detail' patient.id %}" class="btn btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'doctor_patient_analysis' patient.id %}" class="btn btn-outline-doctor" title="Analyze">
+                                                <i class="fas fa-stethoscope"></i>
+                                            </a>
+                                            <a href="{% url 'doctor_appointments' %}?search={{ patient.username }}" class="btn btn-outline-success" title="Appointments">
+                                                <i class="fas fa-calendar"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="fas fa-user-injured fa-2x text-muted mb-3"></i>
+                                        <h5>No Patients Yet</h5>
+                                        <p class="text-muted">Patients will appear here once they register.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Today's Appointments -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Today's Appointments ({{ today_appointments|length }})</span>
+                    <a href="{% url 'doctor_appointments' %}" class="btn btn-doctor btn-sm">
+                        <i class="fas fa-calendar me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if today_appointments %}
+                    <div class="list-group list-group-flush">
+                        {% for appointment in today_appointments %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold">{{ appointment.patient.get_full_name|default:appointment.patient.username }}</div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ appointment.appointment_time|time:"H:i" }}
+                                        • {{ appointment.reason|truncatechars:50 }}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ appointment.status }}">
+                                        {{ appointment.get_status_display }}
+                                    </span>
+                                    <div class="mt-2">
+                                        <a href="{% url 'doctor_appointment_detail' appointment.appointment_id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-day fa-2x text-muted mb-3"></i>
+                        <h5>No Appointments Today</h5>
+                        <p class="text-muted">Enjoy your day!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">Quick Actions</div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'doctor_chat' %}" class="btn btn-doctor mb-2">
+                            <i class="fas fa-robot me-2"></i>AI Assistant
+                        </a>
+                        <a href="{% url 'doctor_symptom_analyzer' %}" class="btn btn-primary mb-2">
+                            <i class="fas fa-stethoscope me-2"></i>Symptom Analyzer
+                        </a>
+                        <a href="{% url 'doctor_schedule' %}" class="btn btn-success mb-2">
+                            <i class="fas fa-calendar-alt me-2"></i>View Schedule
+                        </a>
+                        <a href="{% url 'doctor_appointments' %}" class="btn btn-warning mb-2">
+                            <i class="fas fa-calendar-check me-2"></i>Appointments
+                            {% if pending_appointments %}
+                            <span class="badge bg-danger">{{ pending_appointments }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Appointments -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Upcoming Appointments</span>
+                    <a href="{% url 'doctor_appointments' %}" class="btn btn-sm btn-outline-doctor">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_appointments %}
+                    <div class="list-group list-group-flush">
+                        {% for appointment in upcoming_appointments %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold">{{ appointment.patient.get_full_name|default:appointment.patient.username }}</div>
+                                    <div class="small text-muted">
+                                        {{ appointment.appointment_date|date:"M d" }} • {{ appointment.appointment_time|time:"H:i" }}
+                                    </div>
+                                </div>
+                                <span class="badge bg-{{ appointment.status }}">
+                                    {{ appointment.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar fa-2x text-muted mb-3"></i>
+                        <h6>No Upcoming Appointments</h6>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Notifications -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Notifications</span>
+                    {% if notifications %}
+                    <span class="badge bg-danger">{{ notifications|length }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                    <div class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                        <a href="{% if notification.action_url %}{{ notification.action_url }}{% else %}#{% endif %}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    {% if notification.notification_type == 'success' %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    {% elif notification.notification_type == 'warning' %}
+                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                    {% elif notification.notification_type == 'error' %}
+                                    <i class="fas fa-exclamation-circle text-danger"></i>
+                                    {% else %}
+                                    <i class="fas fa-info-circle text-info"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold small">{{ notification.title }}</div>
+                                    <div class="small text-muted">{{ notification.message|truncatechars:60 }}</div>
+                                    <div class="small text-muted mt-1">{{ notification.created_at|timesince }} ago</div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-bell-slash fa-2x text-muted mb-3"></i>
+                        <h6>No Notifications</h6>
+                        <p class="text-muted small">You're all caught up!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Risk distribution chart
+        const ctx = document.getElementById('riskChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'],
+                    datasets: [{
+                        data: [65, 20, 10, 5],
+                        backgroundColor: [
+                            '#d4edda',
+                            '#fff3cd',
+                            '#f8d7da',
+                            '#721c24'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Activity chart
+        const activityCtx = document.getElementById('activityChart');
+        if (activityCtx) {
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Consultations',
+                        data: [12, 19, 8, 15, 22, 18, 14],
+                        borderColor: '#9c27b0',
+                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    // Quick actions
+    function markNotificationRead(notificationId) {
+        fetch(`/api/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}
