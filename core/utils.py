@@ -115,7 +115,7 @@ def query_ollama(prompt, model_name=None):
         response = requests.post(
             f"{ollama_url}/api/generate",  # CORRECT ENDPOINT
             json=payload, 
-            timeout=120,  # Longer timeout for model loading
+            timeout=300,  # Longer timeout for model loading on slow hardware
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'

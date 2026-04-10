@@ -912,7 +912,7 @@ def test_ollama_connection(request):
         
         # First, try to get available models
         try:
-            response = requests.get(f"{ollama_url}/api/tags", timeout=10)
+            response = requests.get(f"{ollama_url}/api/tags", timeout=30)
             
             if response.status_code == 200:
                 data = response.json()
@@ -959,7 +959,7 @@ def test_ollama_connection(request):
                     gen_response = requests.post(
                         f"{ollama_url}/api/generate", 
                         json=test_payload, 
-                        timeout=15
+                        timeout=120
                     )
                     
                     if gen_response.status_code == 200:

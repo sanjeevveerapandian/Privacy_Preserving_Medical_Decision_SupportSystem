@@ -74,29 +74,53 @@ def process_xray_ai(document_id, temp_file_path):
         # 1. Run Bone Fracture Detection (YOLOv8)
         frac_result = predict_xray_fracture(temp_file_path)
         
+        # 2. Run Pneumonia Detection (ResNet)
+        pneu_result = predict_xray_pneumonia(temp_file_path)
+        
         document.extracted_data = {
-            'fracture': frac_result
+            'fracture': frac_result,
+            'pneumonia': pneu_result
         }
         
         frac_pred = frac_result.get('prediction', '')
+        pneu_pred = pneu_result.get('prediction', '')
         
-        if frac_pred == "fracture detected":
-            document.ai_prediction = "Fracture Detected"
-            document.ai_confidence = frac_result.get('confidence', 0)
-            overlay = generate_fracture_overlay(temp_file_path)
-            if overlay: document.ai_heatmap = overlay
-            raw_summary = get_fracture_summary(frac_pred, document.ai_confidence, frac_result.get('detections', []))
-        elif frac_pred == "Error":
+        frac_conf = frac_result.get('confidence', 0)
+        pneu_conf = pneu_result.get('confidence', 0)
+        
+        has_fracture = (frac_pred == "fracture detected")
+        has_pneumonia = (pneu_pred == "pneumonia")
+        is_error = (frac_pred == "Error" or pneu_pred == "Error")
+        
+        if is_error:
             document.ai_prediction = "Analysis Error"
             document.ai_confidence = 0
-            raw_summary = "AI encountered an error during bone analysis. Manual radiologist review is required."
+            raw_summary = "AI encountered an error during analysis. Manual radiologist review is required."
+        elif has_fracture and has_pneumonia:
+            document.ai_prediction = "Fracture + Pneumonia Detected"
+            document.ai_confidence = min(frac_conf, pneu_conf)
+            overlay = generate_fracture_overlay(temp_file_path)
+            if overlay: document.ai_heatmap = overlay
+            raw_summary = f"AI detected BOTH potential fracture site(s) (Confidence: {frac_conf}%) and Pneumonia (Confidence: {pneu_conf}%). Immediate clinical review is crucial."
+        elif has_fracture:
+            document.ai_prediction = "Fracture Detected"
+            document.ai_confidence = frac_conf
+            overlay = generate_fracture_overlay(temp_file_path)
+            if overlay: document.ai_heatmap = overlay
+            raw_summary = get_fracture_summary(frac_pred, frac_conf, frac_result.get('detections', []))
+        elif has_pneumonia:
+            document.ai_prediction = "Pneumonia Detected"
+            document.ai_confidence = pneu_conf
+            heatmap = generate_pneumonia_gradcam(temp_file_path)
+            if heatmap: document.ai_heatmap = heatmap
+            raw_summary = get_pneumonia_summary(pneu_pred, pneu_conf)
         else:
-            document.ai_prediction = "Normal (No Fracture)"
-            document.ai_confidence = frac_result.get('confidence', 90)
+            document.ai_prediction = "Normal (No Findings)"
+            document.ai_confidence = min(frac_result.get('confidence', 90.0), pneu_result.get('confidence', 90.0))
             if document.ai_confidence < 95:
-                 raw_summary = f"AI analysis indicates no clear signs of bone fractures (Confidence: {document.ai_confidence}%). Note: Subtle or complex displacements may require manual clinical correlation."
+                 raw_summary = f"AI analysis indicates no clear signs of bone fractures or pneumonia (Confidence: {document.ai_confidence}%). Note: Subtle issues may require manual clinical correlation."
             else:
-                 raw_summary = "AI analysis indicates no high-confidence signs of bone fractures. The scanned structural integrity appears intact."
+                 raw_summary = "AI analysis indicates no high-confidence signs of bone fractures or pneumonia. The scanned structural integrity appears intact and lungs appear clear."
 
         # Encrypt summary for security
         from core.services.crypto_service import encrypt_data

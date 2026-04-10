@@ -39,8 +39,10 @@ def predict_xray_fracture(image_path):
     import subprocess
     import json
     
+    import sys
+    
     cli_path = os.path.join(os.path.dirname(__file__), 'fracture_cli.py')
-    python_path = os.path.join(settings.BASE_DIR, 'venv', 'bin', 'python3')
+    python_path = sys.executable
     
     try:
         cmd = [python_path, cli_path, image_path, "0.05", "640"]
@@ -71,9 +73,11 @@ def generate_fracture_overlay(image_path):
     import json
     import tempfile
     
+    import sys
+    
     logger.info(f"Generating fracture overlay via CLI for: {image_path}")
     cli_path = os.path.join(os.path.dirname(__file__), 'fracture_cli.py')
-    python_path = os.path.join(settings.BASE_DIR, 'venv', 'bin', 'python3')
+    python_path = sys.executable
     
     # Create a temporary output path for the plotted image
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:

@@ -3287,7 +3287,7 @@ def query_ollama(prompt, model=None, max_tokens=500, temperature=0.7):
         response = requests.post(
             url,
             json=payload,
-            timeout=120,  # 2 minute timeout for longer responses
+            timeout=300,  # 5 minute timeout for longer responses on slow hardware
             headers={'Content-Type': 'application/json'}
         )
         
